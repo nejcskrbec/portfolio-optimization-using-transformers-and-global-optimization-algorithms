@@ -1,0 +1,97 @@
+% Extra, unnumbered EMAI front page.  This file is intentionally
+% self-contained and draws directly on the physical page so that it does
+% not inherit the two-column thesis text block or its large left margin.
+
+\clearpage
+\setcounter{page}{0}% avoid duplicate hyperref page anchors; the class hook resets the thesis to page 1
+\thispagestyle{empty}%
+\begingroup
+\makeatletter
+
+
+
+\newcommand{\emaimonthname}{%
+  \ifcase\month
+    \or January%
+    \or February%
+    \or March%
+    \or April%
+    \or May%
+    \or June%
+    \or July%
+    \or August%
+    \or September%
+    \or October%
+    \or November%
+    \or December%
+  \fi%
+}
+
+
+% EMAI front page helpers.  These commands are deliberately local to this
+% group, so they do not have to be defined in friteza.cls.
+\def\emaisloveniantitle{\@title@sl}%
+\def\emaiEnglishTitle{\@title@en}%
+\def\emaititle{%
+  \expandafter\ifstrequal\expandafter{\languagename}{slovene}{\@title@sl}{\@title@en}%
+}%
+\def\emaiauthor{\firstauthor}%
+\newcommand{\emaiyear}{\emaimonthname~\the\year}
+\def\emaisupervisorline{%
+  \@ifundefined{supervisorname}{}{{\large \textbf{Supervisor:} \supervisortitle\ \supervisorname\par}}%
+}%
+\def\emaicosupervisorline{%
+  \@ifundefined{cosupervisorname}{}{{\large \textbf{Co-supervisor:} \cosupervisortitle\ \cosupervisorname\@ifundefined{cosupervisoraffiliation}{}{, \cosupervisoraffiliation}\par}}%
+}%
+
+\setlength{\parindent}{0pt}%
+\begin{tikzpicture}[remember picture,overlay,inner sep=30pt,outer sep=30pt]
+  \node[anchor=north west] at (current page.north west) {%
+    \includegraphics[width=.82\paperwidth]{logo/EMAI_header.jpg}%
+  };
+
+  \node[anchor=north,text width=.8\paperwidth,align=center] at ([yshift=-.200\paperheight]current page.north) {%
+    \centering
+    {\titlefont \emaiEnglishTitle\par}%
+    \vskip 5em 
+    {\normalfont\sffamily\large \emaiauthor\par} 
+    \vskip 5em 
+	{\normalfont\sffamily\emaisupervisorline\par}%
+    {\normalfont\sffamily\emaicosupervisorline\par}%
+
+
+	\vskip 15em
+    {\normalfont\sffamily\emaiyear}%
+    \vskip 5em 
+	\noindent\makebox[\linewidth]{\includegraphics[width=3cm]{logo/UL-FRI.png}}
+	\par
+	{\normalfont\sffamily University of Ljubljana\par}% 
+    {\normalfont\sffamily Faculty of Computer and Information Science\par}% 
+  };
+
+%  \node[anchor=north,text width=.82\paperwidth,align=center] at %([yshift=-.350\paperheight]current page.north) {%
+%    \centering
+%    {\normalfont\sffamily\bfseries\large \emaiauthor\par}%
+%  };
+
+%  \node[anchor=north,text width=.82\paperwidth,align=center] at %([yshift=-.50\paperheight]current page.north) {%
+%    \centering%
+%	{\normalfont\sffamily\emaisupervisorline\par}%
+ %   {\normalfont\sffamily\emaicosupervisorline\par}%
+    %{\vskip 10em \normalfont\sffamily\emaiyear\par}% 
+ % };
+
+
+%  \node[anchor=south,text width=.82\paperwidth,align=center] at %([yshift=.065\paperheight]current page.south) {%
+%    \centering
+%    {\normalfont\sffamily\emaiyear}%
+%    \vskip 5em %
+%	\noindent\makebox[\linewidth]{\includegraphics[width=3cm]{logo/UL-FRI.png}}
+%	\par
+%	{\normalfont\sffamily University of Ljubljana\par}% 
+%    {\normalfont\sffamily Faculty of Computer and Information Science\par}% 
+%  };
+\end{tikzpicture}%
+\null
+\clearpage
+\endgroup

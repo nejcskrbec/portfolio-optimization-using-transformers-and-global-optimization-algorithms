@@ -1,0 +1,349 @@
+% Required for PDF/A metadata.
+% Since LaTeX 2025-11-01, \DocumentMetadata always loads the
+% latex-lab tagging modules. This template only needs PDF management
+% for the PDF/A metadata, not the experimental tagging layer, so use
+% the dedicated pdfmanagement package when it is available.
+\IfFileExists{pdfmanagement.sty}{%
+  \RequirePackage{pdfmanagement}%
+  \SetKeys[document/metadata]{pdfstandard = a-2b, pdfversion = 1.7, lang = sl}%
+}{%
+  % Compatibility fallback for older TeX installations.
+  \providecommand\DebugTemplatesOn{}%
+  \providecommand\DebugTemplatesOff{}%
+  \DocumentMetadata{pdfstandard = a-2b, pdfversion = 1.7, lang = sl}%
+}
+
+% if row numbering is required by your supervisor for review, use the lineno option
+\documentclass[9pt]{style/friteza}
+% use the following file to define/include additional elements
+\input{user_defs.tex}
+
+\title[slovene]{Optimizacija portfelja z uporabo transformerjev in globalnih optimizacijskih algoritmov}
+\title[english]{Portfolio optimization using transformers and global optimization algorithms}
+
+\author{Nejc Skrbec}
+% Please give the surname of the lead author for the running footer
+\leadauthor{Skrbec N.}
+
+\supervisor{doc. dr.}{Luka F{\"u}rst}
+% If you do not have a cosupervisor, comment out the following row.
+%\cosupervisor{prof. dr.}{Ime Priimek}
+
+% Choose your study programmes (and track, if applicable): BUN-RI, BVS-RI, BUN-RM, BMA-RI-PV, BMA-RI, BMA-MM, BMA-UI
+\program{BMA-RI}
+% Study-year
+\vol{2025/26}
+% Choose main language: slovene or english
+\mainlanguage{slovene}
+
+\keywords[slovene]{Optimizacija portfelja | Mean-variance | Kardinalna omejitev | Presečni transformer | Napovedovanje donosov | Kombinacija napovedi | Metahevristike | Rojenje delcev | Simulirano ohlajanje | Genetski algoritem}
+
+\keywords[english]{Portfolio optimization, Mean-variance, Cardinality constraint, Cross-sectional transformer, Return forecasting, Forecast combination, Metaheuristics, Particle swarm optimization, Simulated annealing, Genetic algorithm}
+
+% Provide a link (or links) to the repository where your data and code is published. If no code was produced, comment out this section.
+%\repository{https://github.com/nejcskrbec/portfolio-optimization}
+
+\sloabstract{Sestava naložbenega portfelja je klasičen optimizacijski problem, ki ga je Markowitz formuliral kot iskanje ravnovesja med pričakovanim donosom in tveganjem. V praksi pri tem naletimo na dve težavi: pričakovane donose je težko oceniti, uporabne (kardinalne) omejitve na število sredstev v portfelju pa problem spremenijo v mešano celoštevilsko in nekonveksno nalogo, ki je klasične kvadratne metode ne rešujejo. V tem delu predstavljamo hibridni cevovod, ki obe težavi naslavlja ločeno. Pričakovane donose~$\vec{\mu}$ in kovariančno matriko~$\vec{\Sigma}$ ocenjujemo s presečnim (angl.\ \emph{cross-sectional}) transformerjem tipa MASTER, ki iz cenovne zgodovine vseh sredstev hkrati napove njihovo relativno razvrstitev po prihodnjem donosu ter faktorsko kovarianco iz iste deljene predstavitve. Kot dodatno plast robustnosti napovedi transformerja z zgodovinskim povprečjem sproti spletno kombiniramo s postopkom Hedge. Kardinalno omejeni mean-variance problem nato rešimo s tremi metahevristikami, implementiranimi v C++: rojenjem delcev, simuliranim ohlajanjem in genetskim algoritmom. Kakovost optimizatorjev ovrednotimo na standardnih primerih knjižnice OR-Library, celoten cevovod pa s postopnim (walk-forward) testiranjem na realnih borznih podatkih v šestih tržnih režimih (vključno s krizama 2008 in 2020), pri čemer transformerski cevovod sistematično primerjamo s klasičnim zgodovinskim cevovodom ter z močnimi referencami (Ledoit-Wolf, Black-Litterman, LSTM in gradientni gozd). Metahevristike na OR-Library dosežejo objavljeno neomejeno fronto z napako reda enega odstotka pri manjših in nekaj odstotkov pri večjih univerzah, na realnih podatkih pa se tesno ujemajo s skoraj-eksaktno referenco. Napovedi transformerja so edine z zunaj-vzorčno pozitivno napovedno močjo in izboljšajo tvegano prilagojeni donos; z združevanjem oken čez vse režime ($n\approx 254$) je prednost transformerskega cevovoda pred modeli LSTM in gradientnim gozdom statistično značilna, edini pa prestane tudi popravek Sharpovega količnika na izbiro (angl.\ \emph{deflated Sharpe ratio}). Prednost pred golim zgodovinskim povprečjem ostaja ekonomsko smiselna, a statistično mejna.}
+
+\engabstract{Constructing an investment portfolio is a classical optimization problem, formulated by Markowitz as a trade-off between expected return and risk. In practice two difficulties arise: expected returns are hard to estimate, and the realistic cardinality constraint on the number of held assets turns the problem into a mixed-integer, non-convex task that classical quadratic solvers cannot handle. In this work we present a hybrid pipeline that addresses both difficulties separately. Expected returns~$\vec{\mu}$ and the covariance matrix~$\vec{\Sigma}$ are estimated by a single cross-sectional transformer of the MASTER type that, from the price history of all assets jointly, predicts their relative ranking by future return together with a factor covariance from the same shared representation. As an added robustness layer the transformer forecasts are combined online with the historical mean through the Hedge forecast-combination rule. The cardinality-constrained mean-variance problem is then solved by three metaheuristics implemented in C++: particle swarm optimization, simulated annealing and a genetic algorithm. The optimizers are evaluated on the standard OR-Library instances, and the full pipeline through walk-forward testing on real market data across six market regimes (including the 2008 and 2020 crises), systematically comparing the transformer pipeline against the classical historical pipeline and against strong baselines (Ledoit-Wolf, Black-Litterman, LSTM and gradient boosting). On the OR-Library instances the metaheuristics reach the published unconstrained frontier to within about one percent for smaller and a few percent for larger universes, and on real data they closely match a near-exact reference. The transformer forecasts are the only ones with positive out-of-sample predictive power and they improve risk-adjusted performance; pooling windows across all regimes ($n\approx 254$), the transformer pipeline significantly outperforms the LSTM and gradient-boosting baselines and is the only strategy to survive a selection-adjusted (deflated) Sharpe-ratio test. Its advantage over the plain historical mean remains economically meaningful but statistically marginal.}
+
+\begin{document}
+\maketitle
+
+% If your first paragraph (i.e. with the \dropcap) contains a list environment (quote, quotation, theorem, definition, enumerate, itemize...), the line after the list may have some extra indentation. If this is the case, add \parshape=0 to the end of the list environment.
+\dropcap{S}estava naložbenega portfelja je problem razporeditve razpoložljivega kapitala med množico sredstev tako, da dosežemo čim boljše razmerje med pričakovanim donosom in tveganjem. Sodobno teorijo portfelja je postavil Markowitz~\cite{markowitz1952}, ki je problem formuliral kot kvadratni program: za dane pričakovane donose sredstev in njihovo kovariančno matriko iščemo uteži, ki ob izbrani stopnji tveganja maksimirajo donos oziroma ob izbranem donosu minimirajo varianco. Množica rešitev tega problema tvori t.\,i.\ učinkovito fronto (angl.\ \emph{efficient frontier}).
+
+Čeprav je Markowitzev model teoretično eleganten, se v praksi sooča z dvema pomembnima težavama. Prva je ocenjevanje vhodnih podatkov: model je zelo občutljiv na oceno vektorja pričakovanih donosov~$\vec{\mu}$, ki ga je iz zgodovinskih podatkov težko zanesljivo napovedati, medtem ko je oceno kovariančne matrike~$\vec{\Sigma}$ mogoče stabilizirati. DeMiguel in sod.~\cite{demiguel2009} celo pokažejo, da napake pri oceni~$\vec{\mu}$ pogosto naredijo optimiziran portfelj slabši od naivne enakomerne razporeditve $1/N$. Druga težava so realistične omejitve. V praksi želimo omejiti število sredstev v portfelju na~$K$ (kardinalna omejitev) ter določiti spodnjo in zgornjo mejo posamezne uteži. Te omejitve problem spremenijo iz konveksnega kvadratnega programa v mešano celoštevilsko nekonveksno nalogo, ki je NP-težka in je eksaktne metode za realistične velikosti ne rešijo v sprejemljivem času~\cite{chang2000}.
+
+V tem magistrskem delu obe težavi naslavljamo ločeno. Za oceno pričakovanih donosov uporabljamo globoke nevronske mreže tipa transformer~\cite{vaswani2017}, ki so se na napovedovanju borznih donosov izkazale za konkurenčne klasičnim modelom~\cite{chen2025}. Za reševanje kardinalno omejenega mean-variance problema pa uporabljamo globalne optimizacijske algoritme oziroma metahevristike, ki so v literaturi uveljavljen pristop k tej nalogi~\cite{chang2000,cramaschyns2003,cura2009,woodside2011}.
+
+Kardinalno omejeno optimizacijo portfelja so v temeljnem delu obravnavali Chang in sod.~\cite{chang2000}, ki so predlagali tri metahevristike (genetski algoritem, simulirano ohlajanje in tabu iskanje) ter uvedli standardne testne primere, danes dostopne v knjižnici OR-Library~\cite{beasley1990}. Njihova formulacija in metrika napake fronte sta postali de-facto referenca. Crama in Schyns~\cite{cramaschyns2003} sta podrobno raziskala simulirano ohlajanje, Cura~\cite{cura2009} je predstavil pristop z rojenjem delcev, Woodside-Oriakhi in sod.~\cite{woodside2011} pa so primerjali genetski algoritem, simulirano ohlajanje in tabu iskanje na razširjenem naboru.
+
+Na strani napovedovanja donosov so transformerji, prvotno predlagani za obdelavo naravnega jezika~\cite{vaswani2017}, v zadnjih letih postali vodilna arhitektura tudi za časovne vrste in borzne donose~\cite{chen2025,das2024timesfm,kisiel2022}. Za napovedovanje donosov delnic se je kot posebej primerna izkazala \emph{presečna} (angl.\ \emph{cross-sectional}) zasnova, ki namesto vsakega sredstva posebej hkrati obdela celotno univerzo in tako zajame medsebojne odvisnosti med delnicami. Yoo in sod.~\cite{yoo2021dtml} so s transformerjem po podatkovni osi (DTML) modelirali korelacije med delnicami, Li in sod.~\cite{li2024master} pa so z modelom MASTER pokazali, da tržno vodena presečna pozornost izboljša napoved razvrstitve delnic po donosu. Ker za sestavo portfelja ni pomembna absolutna vrednost napovedi, temveč razvrstitev sredstev, model učimo z izgubo tipa \emph{learning-to-rank}~\cite{cao2007listnet} in kakovost napovedi merimo z informacijskim koeficientom~\cite{grinold2000}. Naš napovedni model je poenostavljena različica arhitekture MASTER~\cite{li2024master}.
+
+Ker je napovedni signal donosov znano šibek in nestanoviten, se opremo tudi na dolgo uveljavljeno spoznanje, da kombinacija napovedi praviloma prekaša izbiro ene same. Transformerske in zgodovinske napovedi zato sproti spletno združujemo s postopkom Hedge~\cite{freund1997}, katerega meja obžalovanja (angl.\ \emph{regret bound}) zagotavlja, da kombinacija v nobenem režimu ne zaostane bistveno za najboljšim posameznim virom.
+
+Prispevek tega dela je celovit, odprtokodni cevovod, ki povezuje sodoben presečni napovedni model donosov s klasičnimi metahevristikami za kardinalno omejeno optimizacijo, ter sistematičen, večrežimski preizkusni okvir. Ta na eni strani na standardnih primerih OR-Library ovrednoti kakovost samih optimizatorjev, na drugi pa s postopnim (walk-forward) testiranjem na realnih borznih podatkih v šestih tržnih režimih primerja celoten \emph{transformerski cevovod} (model~$\vec{\mu}$ + model~$\vec{\Sigma}$) s klasičnim \emph{zgodovinskim cevovodom} (vzorčni~$\vec{\mu}$ + vzorčna~$\vec{\Sigma}$) in z več močnimi referenčnimi strategijami, statistično značilnost razlik pa ovrednoti z združevanjem oken čez režime in vrsto robustnih testov.
+
+\section{Metode}\label{sec:metode}
+Cevovod sestavljajo štirje ločeni gradniki: (1)~ocena pričakovanih donosov~$\vec{\mu}$, (2)~ocena kovariančne matrike~$\vec{\Sigma}$, (3)~reševanje kardinalno omejenega mean-variance problema z metahevristikami in (4)~postopno vrednotenje. Slika~\ref{fig:pipeline} shematsko prikazuje tri ločene cevovode (zgodovinski, transformerski in ansambelski), ki jih med seboj primerjamo. V nadaljevanju najprej formaliziramo problem, nato opišemo posamezne gradnike.
+
+\begin{figure}[htbp]
+  \centering
+  \resizebox{0.99\linewidth}{!}{%
+  \begin{tikzpicture}[
+      font=\scriptsize,
+      >={Latex[length=2mm]},
+      box/.style={rounded corners=2pt, draw, align=center, inner sep=3pt,
+                  minimum height=11mm, text width=24mm},
+      data/.style={box, fill=black!6, text width=18mm},
+      est/.style={box, fill=blue!8, draw=blue!55, text width=26mm},
+      comb/.style={box, fill=teal!12, draw=teal!60, text width=16mm},
+      solv/.style={box, fill=orange!14, draw=orange!70!black, text width=25mm},
+      outp/.style={box, fill=black!6, text width=19mm},
+      ttl/.style={font=\bfseries, align=left, text width=20mm},
+      lab/.style={font=\itshape, inner sep=1.5pt},
+  ]
+    % ===== (a) Zgodovinski =====
+    \node[ttl] (ta) {(a)~Zgodovinski};
+    \node[data, right=6mm of ta] (da) {Cenovna zgodovina};
+    \node[est, right=10mm of da] (ea) {Zgod.\ drseče okno:\\vzorčni $\vec{\mu}$ + vzorčna $\vec{\Sigma}$};
+    \node[solv, right=16mm of ea] (sa) {Metahevristika\\PSO $\cdot$ SA $\cdot$ GA\\CCMV ($K$)};
+    \node[outp, right=10mm of sa] (oa) {Uteži $\vec{w}$\\walk-forward};
+    \draw[->] (da) -- (ea);
+    \draw[->] (ea) -- node[lab, above, align=center]{$\vec{\mu},\vec{\Sigma}$} (sa);
+    \draw[->] (sa) -- (oa);
+
+    % ===== (b) Transformer =====
+    \node[ttl, below=15mm of ta] (tb) {(b)~Transformer};
+    \node[data, right=6mm of tb] (db) {Cenovna zgodovina};
+    \node[est, right=10mm of db] (eb) {Presečni transformer:\\$\vec{\mu}$-glava + $\vec{\Sigma}$-glava\\$\vec{\Sigma}=\vec{B}\vec{B}^{\!\top}\!+\!\operatorname{diag}(\vec{\psi})$};
+    \node[solv, right=16mm of eb] (sb) {Metahevristika\\PSO $\cdot$ SA $\cdot$ GA\\CCMV ($K$)};
+    \node[outp, right=10mm of sb] (ob) {Uteži $\vec{w}$\\walk-forward};
+    \draw[->] (db) -- (eb);
+    \draw[->] (eb) -- node[lab, above, align=center]{$\vec{\mu}_\text{transf}$\\$\vec{\Sigma}_\text{transf}$} (sb);
+    \draw[->] (sb) -- (ob);
+
+    % ===== (c) Ansambel =====
+    \node[ttl, below=24mm of tb] (tc) {(c)~Ansambel};
+    \node[data, right=6mm of tc] (dc) {Cenovna zgodovina};
+    \node[est, above right=5mm and 12mm of dc] (tt) {Transformer:\\$\vec{\mu}_\text{transf}, \vec{\Sigma}_\text{transf}$};
+    \node[est, below right=5mm and 12mm of dc] (hh) {Zgod.\ drseče okno:\\$\vec{\mu}_\text{zgod}$};
+    \coordinate (cmid) at (hh.east |- dc);
+    \node[comb, right=16mm of cmid] (hd) {Hedge:\\$\vec{\mu}_\text{ans}$};
+    \node[solv, right=14mm of hd] (sc) {Metahevristika\\PSO $\cdot$ SA $\cdot$ GA\\CCMV ($K$)};
+    \node[outp, right=10mm of sc] (oc) {Uteži $\vec{w}$\\walk-forward};
+    \draw[->] (dc) -- (tt);
+    \draw[->] (dc) -- (hh);
+    \draw[->] (tt.east) -- node[lab, above, pos=0.3]{$\vec{\mu}_\text{transf}$} (hd.north west);
+    \draw[->] (hh.east) -- node[lab, below, pos=0.3]{$\vec{\mu}_\text{zgod}$} (hd.south west);
+    \draw[->] (hd) -- node[lab, above]{$\vec{\mu}_\text{ans}$} (sc);
+    \draw[->] (tt.east) to[out=-25, in=100]
+      node[lab, above, pos=0.75]{$\vec{\Sigma}_\text{transf}$} (sc.north);
+    \draw[->] (sc) -- (oc);
+  \end{tikzpicture}%
+  }
+  \caption{Trije ločeni cevovodi, ki jih primerjamo. \textbf{(a) Zgodovinski:} momenta oceni zgolj zgodovinsko drseče okno (vzorčna $\vec{\mu}$ in $\vec{\Sigma}$) --- povsem klasična referenca. \textbf{(b) Transformer:} oba momenta izhajata iz presečnega transformerja (napovedna $\vec{\mu}$-glava in faktorska $\vec{\Sigma}$-glava $\vec{B}\vec{B}^{\!\top}\!+\!\operatorname{diag}(\vec{\psi})$ iz deljene predstavitve). \textbf{(c) Ansambel:} postopek Hedge spletno kombinira transformerski in zgodovinski~$\vec{\mu}$ v~$\vec{\mu}_\text{ans}$, medtem ko transformerjeva $\vec{\Sigma}_\text{transf}$ ansambel obide in gre neposredno v optimizator. Vsi trije cevovodi svoje momente predajo istim metahevristikam (PSO/SA/GA) na kardinalno omejenem mean-variance problemu ($K$ sredstev), dobljene uteži pa ovrednotimo postopno (walk-forward).}
+  \label{fig:pipeline}
+\end{figure}
+
+\subsection{Formulacija problema}
+Obravnavamo univerzo $N$~sredstev z vektorjem pričakovanih donosov $\vec{\mu}\in\mathbb{R}^N$ in kovariančno matriko donosov $\vec{\Sigma}\in\mathbb{R}^{N\times N}$. Portfelj predstavimo z vektorjem uteži $\vec{w}\in\mathbb{R}^N$, kjer $w_i$ pomeni delež kapitala, vloženega v sredstvo~$i$. Klasični Markowitzev mean-variance model~\cite{markowitz1952} z uravnalnim parametrom tveganja $P\in[0,1]$ maksimira
+\begin{equation} \label{eq:objective}
+  f(\vec{w}) = P\,\vec{\mu}^{\mathsf{T}}\vec{w} - (1-P)\,\vec{w}^{\mathsf{T}}\vec{\Sigma}\vec{w},
+\end{equation}
+kjer prvi člen nagrajuje pričakovani donos, drugi pa kaznuje varianco (tveganje). Vrednost $P=1$ ustreza iskanju najvišjega donosa, $P\to 0$ pa portfelju z najmanjšo varianco; s spreminjanjem~$P$ (ekvivalentno $\lambda = 1-P$) trasiramo učinkovito fronto.
+
+Osnovnima omejitvama proračuna in prepovedi kratkih pozicij,
+\begin{equation} \label{eq:budget}
+  \sum_{i=1}^{N} w_i = 1, \qquad w_i \ge 0,
+\end{equation}
+dodamo še kardinalno omejitev in meje uteži po Changu in sod.~\cite{chang2000}. Naj bo $z_i\in\{0,1\}$ indikator, da je sredstvo~$i$ v portfelju. Tedaj zahtevamo
+\begin{equation} \label{eq:cardinality}
+  \sum_{i=1}^{N} z_i = K, \qquad \varepsilon_i\,z_i \le w_i \le \delta_i\,z_i,
+\end{equation}
+kjer je~$K$ največje dovoljeno število sredstev, $\varepsilon_i$ najmanjši in $\delta_i$ največji delež sredstva, če je to izbrano. Če posameznih mej ne podamo, uporabimo globalni vrednosti $\varepsilon$ in $\delta$. Omejitev~\eqref{eq:cardinality} je razlog za nekonveksnost problema: dopustna množica je unija $\binom{N}{K}$ nizko-dimenzionalnih ploskev, po eni za vsako izbiro nabora~$K$ sredstev. Ker je zaloga vrednosti kombinatorična, klasične kvadratne metode odpovedo, zato posežemo po metahevristikah.
+
+Za dano izbiro nabora (angl.\ \emph{support}) $S=\{i : z_i = 1\}$ pa problem postane navaden konveksni kvadratni program z $K$~spremenljivkami in ga je mogoče rešiti do optimuma. To dejstvo izkoriščamo pri referenčni rešitvi (razdelek~\ref{sec:nearexact}).
+
+\subsection{Ocena pričakovanih donosov s presečnim transformerjem}\label{sec:mu}
+Za napoved pričakovanih donosov uporabljamo en sam \emph{presečni} (angl.\ \emph{cross-sectional}) transformer~\cite{vaswani2017}, ki v enem prehodu obdela celotno univerzo~$N$ sredstev in jih razvrsti po pričakovanem prihodnjem donosu. Arhitektura je poenostavljena različica modela MASTER~\cite{li2024master}: vsako sredstvo najprej z zaporednim (temporalnim) kodirnikom stisnemo v vektorsko predstavitev iz njegovega okna zadnjih~$L$ dnevnih log-donosov, nato pa s presečno (med sredstvi) pozornostjo v vsakem časovnem koraku zajamemo medsebojne odvisnosti med delnicami~\cite{yoo2021dtml}. Iz dobljene deljene predstavitve na sredstvo model poda dve glavi: napoved donosa~$\vec{\mu}$ (ta razdelek) in kovarianco~$\vec{\Sigma}$ (razdelek~\ref{sec:cov}).
+
+Označimo ceno sredstva~$i$ na dan~$t$ s~$p_{i,t}$; dnevni log-donos je $r_{i,t} = \ln(p_{i,t}/p_{i,t-1})$. Ciljna spremenljivka je prihodnji kumulativni log-donos na horizontu~$h$ dni, ki ga \emph{presečno razsrediščimo} (od donosa vsakega sredstva odštejemo povprečje čez univerzo v istem trenutku): $y_{i,t} = \ln(p_{i,t+h}/p_{i,t}) - \tfrac{1}{N}\sum_{j}\ln(p_{j,t+h}/p_{j,t})$. Tako model ne napoveduje tržne smeri, temveč \emph{relativno} uspešnost sredstev, kar je za sestavo portfelja bistveno.
+
+Ker je za optimizacijo pomembna razvrstitev sredstev in ne absolutna vrednost napovedi, model učimo z izgubo tipa \emph{learning-to-rank}. Osnovna izguba je (negativni) presečni rang-korelacijski informacijski koeficient (IC)~\cite{grinold2000} med napovedjo in uresničenim~$y$; po želji jo mešamo z listwise izgubo ListNet~\cite{cao2007listnet}, ki dodatno poudari najbolje uvrščena sredstva ($\text{izguba} = (1-\alpha)\,\text{IC} + \alpha\,\text{ListNet}$). V glavnih poskusih uporabljamo nevtralni model ($\alpha=0$, čista rang-IC izguba); parameter~$\alpha$ ostane kot ablacijski vzvod. Modele učimo z optimizatorjem Adam, z zgodnjim ustavljanjem glede na validacijski (rang) IC, prilagajanjem učne stopnje ob platoju in obrezovanjem gradienta. Ker so posamezni modeli občutljivi na inicializacijo, končno napoved dobimo kot povprečje ansambla treh modelov z različnimi naključnimi semeni.
+
+V vsakem koraku postopnega testiranja napovedi transformerja primerjamo z referenčno oceno~$\vec{\mu}$, izračunano kot drseče zgodovinsko povprečje donosov enako dolgega okna, s čimer izoliramo dejanski prispevek napovednega modela glede na naivno ekstrapolacijo preteklih donosov.
+
+\subsection{Ocena kovariančne matrike}\label{sec:cov}
+Za oceno kovariančne matrike~$\vec{\Sigma}$ uporabljamo dva vira, ki ju v vrednotenju usmerjamo \emph{po scenariju}, tako da vsak cevovod uporablja svojo naravno kovarianco. Oba vrneta pozitivno definitno matriko, skalirano na horizont~$h$:
+\begin{itemize}
+  \item \emph{Vzorčna kovarianca} --- neposredna cenilka iz donosov (po potrebi popravljena na pozitivno definitnost), ki jo uporabimo v povsem klasičnem \emph{zgodovinskem} cevovodu.
+  \item \emph{Kovariančna glava transformerja} --- iz iste deljene predstavitve na sredstvo kot napoved~$\vec{\mu}$ (razdelek~\ref{sec:mu}) druga glava napove faktorsko kovarianco s strukturo
+  \begin{equation} \label{eq:factorcov}
+    \vec{\Sigma} = \vec{B}\vec{B}^{\mathsf{T}} + \operatorname{diag}(\vec{\psi}),
+  \end{equation}
+  kjer je $\vec{B}\in\mathbb{R}^{N\times k}$ matrika faktorskih obremenitev ($k$~faktorjev), $\vec{\psi}>0$ pa idiosinkratične variance. Taka faktorska struktura je pozitivno definitna po konstrukciji in dobro pogojena tudi pri velikih~$N$~\cite{fan2008}. To kovarianco uporabimo v \emph{transformerskem} in \emph{ansambelskem} cevovodu.
+\end{itemize}
+Kovariančno glavo učimo večopravilno skupaj z napovedjo donosa, in sicer z Gaussovo negativno log-verjetnostjo uresničenih donosov; zgodnje ustavljanje pa spremlja \emph{napovedno} (rang-IC) izgubo, tako da deljena kovariančna glava deluje kot regularizator predstavitve in nikoli ne spremeni izbire~$\vec{\mu}$. Modularna zasnova omogoča dodajanje nadaljnjih cenilk (npr.\ Ledoit-Wolfovega krčenja~\cite{ledoit2004}, ki ga uporabimo pri referenčnih strategijah, ali dinamičnih modelov tipa DCC-GARCH~\cite{engle2002}). Za pošteno primerjavo so tako zgodovinski~$\vec{\mu}$ kot vzorčna~$\vec{\Sigma}$ omejeni na isti informacijski horizont kot transformer, s čimer nobena metoda nima dostopa do prihodnjih podatkov.
+
+\subsection{Spletna kombinacija napovedi (ansambel)}\label{sec:ensemble}
+Kot dodatno plast robustnosti napovedni signal donosov sproti spletno kombiniramo. Namesto da bi vnaprej izbrali en sam vir~$\vec{\mu}$, ki je lahko dober v enem tržnem režimu in slab v drugem, uteži virov prilagajamo glede na njihovo dosedanjo uspešnost s postopkom Hedge (multiplikativne uteži)~\cite{freund1997}. Kot eksperte vzamemo zgodovinsko drseče povprečje in nevtralno napoved transformerja, slednjo pod nekaj vrednostmi predznačene potenčne preslikave $\operatorname{sign}(z)\,|z|^{\gamma}$ za $\gamma\in\{0{,}5,1,2\}$ (vrednosti $\gamma>1$ izostrijo najbolje uvrščena sredstva). V vsakem oknu standardizirane eksperte utežimo z~$\vec{w}$, rezultat pa umerimo na povprečje in odklon transformerjeve napovedi, tako da se spremeni le \emph{presečna oblika} signala, ne pa njegovo razmerje do~$\vec{\Sigma}$. Po vsakem oknu uteži posodobimo glede na uresničeno izgubo,
+\begin{equation} \label{eq:hedge}
+  w_k \leftarrow w_k \exp(-\eta\,\ell_k), \qquad \eta = \sqrt{8\ln K / T},
+\end{equation}
+kjer je $\ell_k$ izguba eksperta~$k$, $K$~število ekspertov in $T$~število oken; učna stopnja~$\eta$ izhaja iz teorije in ni umerjena na testne režime. Postopek je vzročen (uteži uporabljajo le pretekla okna) in praktično zastonj (ena sama nevtralna mreža, čista numerična inferenca). Njegova meja obžalovanja (angl.\ \emph{regret bound})~\cite{freund1997} zagotavlja, da kombinacija v nobenem režimu ne zaostane bistveno za najboljšim posameznim ekspertom, vključno z zgodovinsko referenco. Ta ansambel poganja scenarij \emph{Ansambel} (nad transformerjevo kovarianco iz razdelka~\ref{sec:cov}).
+
+\subsection{Globalni optimizacijski algoritmi}\label{sec:solvers}
+Jedro cevovoda so tri metahevristike, ki rešujejo kardinalno omejeni problem~\eqref{eq:objective}--\eqref{eq:cardinality}. Implementirane so v jeziku C++ zaradi hitrosti, saj vsaka opravi na tisoče ovrednotenj ciljne funkcije. Vsak algoritem sam poskrbi za kardinalno omejitev --- ni zunanje predselekcije sredstev --- izbiro~$K$ sredstev in njihove uteži pa optimizira sočasno. Za pošteno primerjavo računske porabe vsak algoritem šteje število ovrednotenj ciljne funkcije. Ciljno funkcijo ovrednotimo v \emph{redko-zasedeni} obliki: ker je pri kardinalnosti~$K\ll N$ le~$K$ uteži neničelnih, kvadratno obliko~$\vec{w}^{\mathsf{T}}\vec{\Sigma}\vec{w}$ seštevamo zgolj čez izbrana sredstva, kar zniža ceno ovrednotenja z~$O(N^2)$ na~$O(K^2)$ in omogoča velike univerzume; sprememba je izključno implementacijska in ne spremeni vedenja algoritmov (na primerih OR-Library reproducira polno obliko do~$10^{-5}$).\footnote{Ker je optimizacija dokazano vedenjsko nevtralna, obstoječi rezultati ostajajo veljavni; celotno ponovitev testov z redko-zasedenim solverjem načrtujemo kot potrditev.}
+
+Skupni gradnik vseh algoritmov je projekcija na dopustno množico. Uteži izbranih sredstev najprej obrežemo na $[\varepsilon_i,\delta_i]$ in normaliziramo na vsoto~1, nato pa z iterativnim postopkom po Changu in sod.~\cite{chang2000} presežke nasičenih sredstev prerazporedimo, dokler niso izpolnjene vse meje.
+
+\subsubsection{Rojenje delcev (PSO)}
+Rojenje delcev~\cite{kennedy1995} vsak kandidat (delec) predstavi z zvezno komponento uteži in binarno komponento izbire sredstev, obe s svojima hitrostma. Delci se premikajo proti svojemu najboljšemu in globalno najboljšemu položaju. Sledimo shemi Cura~\cite{cura2009}: hitrostna koeficienta $\omega_1,\omega_2$ vzorčimo iz $U[0,2]$, binarni položaj pridobimo s sigmoidno preslikavo hitrosti in pragom~$\alpha$, po vsakem premiku pa poseben postopek uravna število izbranih sredstev na~$K$ ter uteži projicira na dopustno množico.
+
+\subsubsection{Simulirano ohlajanje (SA)}
+Simulirano ohlajanje~\cite{kirkpatrick1983} je trajektorijski algoritem, ki sprejema slabše rešitve z verjetnostjo $\exp(-\Delta/T)$ in tako uhaja lokalnim optimumom; temperaturo~$T$ postopoma znižujemo. Implementacija sledi okviru Crame in Schynsa~\cite{cramaschyns2003}: začetno temperaturo umerimo iz povprečne pozitivne spremembe ciljne funkcije, dolžina stopnje je sorazmerna~$N$, ohlajanje je geometrijsko, ustavimo pa se po določenem številu stopenj brez sprejetja. Osnovna poteza prerazporedi utež med dvema aktivnima sredstvoma; z manjšo verjetnostjo pa izvedemo zamenjavo sredstva, vodeno po Sharpovi meri $\mu_i/\sigma_i$. Za primerjavo implementiramo tudi zvesto (angl.\ \emph{paper-faithful}) varianto z izključno naključnimi potezami.
+
+\subsubsection{Genetski algoritem (GA)}
+Genetski algoritem~\cite{goldberg1989} vzdržuje populacijo kromosomov in jih z izborom, križanjem in mutacijo razvija proti boljšim rešitvam. Uporabljamo kodiranje po Changu in sod.~\cite{chang2000}: kromosom hrani nabor~$K$ izbranih sredstev in zvezne deleže, ki jih pri dekodiranju z vodno-polnilnim (angl.\ \emph{water-filling}) postopkom projiciramo na dopustno množico. Privzeta generacijska varianta uporablja turnirski izbor, enotočkovno križanje s popravilom na~$K$ in elitizem; poleg nje implementiramo zvesto Changovo varianto z ustaljenim stanjem (angl.\ \emph{steady-state}) in ruletnim izborom.
+
+\subsection{Dinamični parameter tveganja}
+Parameter tveganja~$P$ v enačbi~\eqref{eq:objective} v postopnem testiranju prilagajamo tržnemu režimu. Ang in Bekaert~\cite{ang2004} pokažeta, da vlagatelj, ki ne upošteva volatilnostnih režimov, v obdobjih visoke volatilnosti drži preveč tvegana sredstva. V režimu nizke volatilnosti (bikovski trg) so napovedi donosov zanesljivejše, zato~$P$ zvišamo; v režimu visoke volatilnosti (medvedji trg) ga znižamo. Kot merilo režima uporabimo 21-dnevno realizirano volatilnost~$\sigma_{21}$, iz katere z zvezno interpolacijo med spodnjim in zgornjim pragom dobimo prilagojeni~$P$, omejen na razumno območje.
+
+\subsection{Referenčna rešitev in primerjalne strategije}\label{sec:nearexact}
+Da izmerimo optimalnostno vrzel (angl.\ \emph{optimality gap}) metahevristik, izračunamo skoraj-eksaktno (angl.\ \emph{near-exact}) referenco. Ker je problem ob fiksnem naboru sredstev navaden konveksni kvadratni program, ravnamo takole: če je $\binom{N}{K}$ dovolj majhen, eksaktno preiščemo vse nabore in vsakega rešimo do optimuma (globalni optimum problema); sicer izvedemo večkratno lokalno iskanje s soseščino ene zamenjave, ogreto (angl.\ \emph{warm-started}) z nabori metahevrističnih rešitev. Vsak podproblem rešimo s konveksnim kvadratnim optimizatorjem.
+
+Za vrednotenje na realnih podatkih dodamo tudi vrsto primerjalnih strategij, izbranih tako, da izolirajo prispevek posameznih odločitev. \emph{Klasične} strategije: naivno $1/N$ in pasivni tržni indeks, portfelj z najmanjšo varianco (GMV), paritetni portfelj tveganja~\cite{maillard2010,spinu2013} in hierarhično pariteto tveganja (HRP)~\cite{lopezdeprado2016} (vse tri uporabljajo le~$\vec{\Sigma}$, brez~$\vec{\mu}$), ter Markowitzev tangentni portfelj z istima~$\vec{\mu}$ in~$\vec{\Sigma}$, a brez kardinalne omejitve. Te $\vec{\Sigma}$-only strategije pokažejo, ali napovedi~$\vec{\mu}$ sploh dodajo vrednost; HRP je pri tem kanonična moderna referenca, ki klastrira sredstva in se pogosto izkaže za robustnejšo od GMV zunaj vzorca~\cite{lopezdeprado2016}. Tangentni portfelj razkrije ceno kardinalne omejitve in metahevristike glede na klasični optimum.
+
+Da bi transformerski cevovod primerjali s \emph{krepkimi} in ne le naivnimi referencami, dodamo še štiri scenarije, ki jih rešujejo iste metahevristike. \emph{Zgodovinski-LW} zamenja vzorčno~$\vec{\Sigma}$ z Ledoit-Wolfovim krčenjem~\cite{ledoit2004} in tako preizkusi, ali močnejša cenilka kovariance reši klasični cevovod. \emph{Black-Litterman} uporabi klasično posteriorno oceno~$\vec{\mu}$~\cite{black1992,helitterman1999} z ravnovesno predhodno porazdelitvijo (enakomerne uteži, brez pogleda v prihodnost) in zgodovinskim povprečjem kot pogledom vlagatelja. \emph{LSTM} zamenja transformerjev hrbtenični del z enoslojno mrežo LSTM~\cite{hochreiter1997lstm}, a ohrani \emph{isti} presečni cilj, izgubo in ansambel treh semen --- s tem izoliramo prispevek prav transformerske arhitekture. \emph{Gradientni gozd} (angl.\ \emph{gradient boosting}) napove~$\vec{\mu}$ z modelom LightGBM~\cite{ke2017lightgbm} nad ročno izdelanimi značilkami (momentum, obrat, volatilnost) in tako preizkusi, ali transformer prekaša preprostejši strojni model. Vse štiri reference so bile v predlogu naloge izrecno predvidene.
+
+\subsection{Implementacija in postopno vrednotenje}
+Napovedni in kovariančni del sta implementirana v jeziku Python (PyTorch, scikit-learn, knjižnica \texttt{arch}), optimizatorji pa v jeziku C++ zaradi hitrosti. Povezavo med njima ureja lahek most: Python v začasni imenik zapiše konfiguracijo in datoteko z~$N$, oznakami sredstev, vektorjem~$\vec{\mu}$, sploščeno kovarianco ter po potrebi mejami~$\varepsilon_i,\delta_i$; prevedeni program prebere oboje, zažene izbrani algoritem in rezultat izpiše na standardni izhod, od koder Python razčleni uteži.
+
+Vrednotenje poteka postopno (angl.\ \emph{walk-forward}). Napovedni model naučimo enkrat na učnem obdobju, nato pa testno obdobje razdelimo na~$W$ zaporednih oken. V vsakem oknu na naraščajoči zgodovini izračunamo~$\vec{\mu}$ in~$\vec{\Sigma}$, poženemo vse metahevristike ter referenco za vsak scenarij, dobljene uteži pa ovrednotimo na dejanskih donosih v naslednjem oknu. Vsak scenarij je celovit cevovod, ki pari svoj vir~$\vec{\mu}$ s svojo naravno~$\vec{\Sigma}$: \emph{Zgodovinski} (zgodovinski~$\vec{\mu}$ + vzorčna~$\vec{\Sigma}$), \emph{Transformer} (model~$\vec{\mu}$ + kovariančna glava transformerja) in \emph{Ansambel} (kombinacija Hedge + kovariančna glava transformerja), poleg tega pa še krepke reference iz razdelka~\ref{sec:nearexact}. Osrednja primerjava dela je tako \emph{Transformer} proti \emph{Zgodovinskemu} --- primerjava celotnih cevovodov, ne le vira~$\vec{\mu}$.
+
+Poleg donosnih metrik (kumulativni in letni donos, Sharpov ter Sortinov količnik, največji upad, volatilnost) merimo tudi obrat portfelja (angl.\ \emph{turnover}) in vpliv transakcijskih stroškov ter kakovost napovedi~$\vec{\mu}$ z rang-korelacijskim informacijskim koeficientom (IC)~\cite{grinold2000}. Ker ima posamezen režim le okoli $30$--$48$ oken in zato malo statistične moči, značilnost ovrednotimo predvsem z \emph{združevanjem} oken čez vse režime ($n\approx 254$) in vrsto robustnih testov: parni Wilcoxonov in predznačni test, $t$-statistiko s Newey-Westovo (HAC) popravljeno varianco za avtokorelacijo~\cite{neweywest1987}, po režimu grupirano (cluster-robust) varianco, test razlike Sharpovih količnikov~\cite{ledoitwolf2008,memmel2003} s stacionarnim samovzorčenjem~\cite{politis1994}, na izbiro popravljeni Sharpov količnik (angl.\ \emph{deflated Sharpe ratio})~\cite{baileylopez2014} ter popravek Benjamini-Hochberg za mnogotere teste~\cite{benjamini1995}.
+
+\section{Rezultati}
+Metahevristike najprej ovrednotimo na standardnih primerih iz knjižnice OR-Library~\cite{chang2000,beasley1990}, ki so v literaturi de-facto referenca za kakovost optimizatorjev pri kardinalno omejenem problemu. Vsak primer vsebuje priloženo \emph{neomejeno} učinkovito fronto; kakovost hevristike merimo s standardno odstotno napako po Changu in sod.~\cite{chang2000}: za vsako točko omejene fronte (dobljene s pomikom po~$\lambda$) izračunamo najmanjšo relativno razdaljo do reference po varianci oziroma donosu. Nastavitve so standardne: $K=10$, $\varepsilon_i=0{,}01$, $\delta_i=1$.
+
+Tabela~\ref{tab:orlib} povzema povprečno in mediano odstotne napake na dveh primerih: Hang Seng ($N=31$) in DAX~100 ($N=85$). Na manjši univerzi se vsi algoritmi približajo objavljeni fronti na okoli en odstotek ali manj, kar potrjuje pravilnost implementacije. Najbolje se odreže zvesta varianta simuliranega ohlajanja (mediana napake $\approx 1{,}2\,\%$), tesno ji sledi rojenje delcev. Na večji univerzi DAX~100 napake pričakovano narastejo, saj se prostor iskanja močno poveča; tudi tu je med najboljšimi rojenje delcev (povprečna napaka okoli $3\,\%$).
+
+\begin{table}[htbp]
+  \centering
+  \caption{Standardna odstotna napaka fronte (Chang in sod.~\cite{chang2000}) glede na objavljeno neomejeno fronto OR-Library, pri $K=10$. Nižja vrednost je boljša. Prikazani sta povprečje in mediana čez trasirane točke fronte.}
+  \label{tab:orlib}
+  \small
+  \begin{tabular}{lcccc}
+    \hline
+     & \multicolumn{2}{c}{Hang Seng ($N{=}31$)} & \multicolumn{2}{c}{DAX 100 ($N{=}85$)}\\
+    Algoritem & povpr. & mediana & povpr. & mediana\\
+    \hline
+    PSO                & 1{,}24 & 1{,}34 &  2{,}99 & 2{,}82\\
+    SA                 & 2{,}70 & 1{,}56 &  3{,}43 & 2{,}90\\
+    GA                 & 1{,}46 & 1{,}51 &  3{,}97 & 3{,}46\\
+    SA (zvesta)        & 1{,}11 & 1{,}22 &  4{,}01 & 2{,}60\\
+    GA (Chang)         & 1{,}50 & 1{,}46 &  3{,}46 & 3{,}27\\
+    \hline
+  \end{tabular}
+\end{table}
+
+Rezultati na OR-Library potrjujejo, da so implementirane metahevristike konkurenčne objavljenim v literaturi in da med njimi ni enega samega zmagovalca za vse velikosti; rojenje delcev in genetski algoritem pa sta najbolj robustna čez oba primera. Ta preizkus je neodvisen od napovednega dela cevovoda in preverja izključno kakovost optimizatorjev. Slika~\ref{fig:orlib} ponazori to skladnost: točke vseh treh metahevristik ležijo praktično na objavljeni fronti.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.82\linewidth]{orlib_frontier_port1}
+  \caption{Kardinalno omejene fronte metahevristik na primeru Hang Seng ($N{=}31$, $K{=}10$) proti objavljeni neomejeni fronti OR-Library (siva krivulja). Vsaka točka je rešitev pri eni vrednosti~$\lambda$; posamezne metahevristike PSO (zelena), SA (rdeča) in GA (vijolična) se skoraj popolnoma prekrivajo in ležijo tik ob referenčni fronti --- vizualna potrditev standardne odstotne napake iz tabele~\ref{tab:orlib}.}
+  \label{fig:orlib}
+\end{figure}
+
+\subsection{Postopno testiranje na realnih podatkih}
+Drugi del vrednotenja je postopno testiranje celotnega cevovoda na univerzah ameriških delnic velike kapitalizacije (dnevne prilagojene zaključne cene prek storitve \texttt{yfinance}), s kardinalnostjo $K=10$, mejama uteži $\varepsilon=0{,}02$ in $\delta=0{,}30$, osnovnim parametrom tveganja $P=0{,}8$ in transakcijskimi stroški $10$~bazičnih točk na enoto obrata. Da bi ocenili robustnost napovednega signala skozi različne tržne razmere, poskus ponovimo v \emph{šestih tržnih režimih}: dveh krizah (globalna finančna kriza 2007--2010 in pandemija 2019--2021), umirjenem obdobju z vračanjem k sredini (2013--2017), obdobju dvigovanja obrestnih mer (2022--2024) ter dveh različicah obdobja 2019--2022 --- s tehnološkimi velikani (\emph{headline}) in brez njih (\emph{divuniverse}). Napovedni model v vsakem režimu naučimo na obdobju pred testom (nikoli ne vidi testnih podatkov), skupno pa čez vse režime dobimo $n\approx 254$ zaporednih (mesečnih, neprekrivajočih) oken. Ker ima posamezen režim malo oken in zato malo moči (kot pri kratkih vzorcih opozarjajo tudi drugi~\cite{demiguel2009}), značilnost ovrednotimo z združevanjem oken čez režime.
+
+\paragraph{Kakovost napovedi (IC).} Ključni nadzorni pokazatelj je informacijski koeficient (IC) --- rang-korelacija med napovedjo~$\vec{\mu}$ in uresničenimi donosi --- saj signala z ničelnim IC ne more izkoristiti noben optimizator. Ko IC združimo čez vse režime, je transformer \emph{edini} vir napovedi s pozitivno zunaj-vzorčno napovedno močjo (povprečni IC $+0{,}020$; po režimu grupirana $t$-statistika $2{,}49$, $p\approx 0{,}055$), medtem ko so vse klasične in preprostejše reference nič ali negativne: zgodovinsko povprečje $-0{,}021$, Black-Litterman $-0{,}019$, LSTM $-0{,}003$, gradientni gozd $-0{,}001$. Transformer torej ni le boljši od naivne ekstrapolacije, temveč se kot signal loči od vseh preizkušenih alternativ.
+
+\paragraph{Robustnost čez režime.} Tabela~\ref{tab:regimes} prikazuje neto Sharpov količnik (algoritem PSO) transformerskega cevovoda in reference LSTM po posameznih režimih. Transformer prekaša LSTM v petih od šestih režimov; edina izjema je \emph{headline} okno, v katerem preprost model preprosto sledi peščici tehnoloških velikanov (isto obdobje brez njih, \emph{divuniverse}, prednost obrne nazaj k transformerju). Prednost je največja prav v krizi 2008, kjer LSTM povsem odpove --- to je skladno z zaželeno lastnostjo, da napovedni model najbolj pomaga takrat, ko je obvladovanje tveganja najpomembnejše. Slika~\ref{fig:regimegrid} to prikaže še vizualno: kumulativni donos transformerskega cevovoda (s posameznimi solverji PSO/SA/GA) proti zgodovinski referenci v vseh šestih režimih hkrati.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Neto Sharpov količnik (po $10$~bazičnih točkah, algoritem PSO) transformerskega cevovoda in reference LSTM po posameznih tržnih režimih.}
+  \label{tab:regimes}
+  \small
+  \begin{tabular}{lrrc}
+    \hline
+    Režim & Transformer & LSTM & IC transf.\\
+    \hline
+    divuniverse (2019--22, brez velikanov) & 1{,}26 & 0{,}80 & $+$\\
+    GFC (kriza 2008)                       & 0{,}60 & 0{,}18 & $+$\\
+    COVID (kriza 2020)                     & 1{,}10 & 0{,}90 & $\approx 0$\\
+    2013--2017 (umirjen trg)               & 1{,}96 & 0{,}85 & $+$\\
+    2022--2024 (dvig obr.\ mer)            & 1{,}11 & 0{,}97 & $+$\\
+    headline (2019--22, z velikani)        & 0{,}34 & 0{,}58 & $+$\\
+    \hline
+  \end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{regime_grid_algos}
+  \caption{Kumulativni donos transformerskega cevovoda čez vseh šest tržnih režimov. V vsakem panelu so posamezne metahevristike PSO (zelena), SA (rdeča) in GA (vijolična), kot referenca pa klasični zgodovinski cevovod (siva črtkana, solver PSO). Znotraj vsakega režima se trije solverji tesno ujemajo, kar potrjuje, da izbira metahevristike ne spremeni zaključkov; razlike med paneli izvirajo iz napovednega signala in tržnega režima.}
+  \label{fig:regimegrid}
+\end{figure}
+
+\paragraph{Združeni preizkus značilnosti.} Osrednji rezultat dobimo z združevanjem vseh $n\approx 254$ oken čez režime (tabela~\ref{tab:pooled}). Na zloženih dnevnih donosih doseže transformerski cevovod letni Sharpov količnik~$0{,}96$ (ansambel~$0{,}99$), kar je bistveno več kot vse preizkušene reference (zgodovinski~$0{,}61$, Black-Litterman~$0{,}58$, LSTM~$0{,}58$, gradientni gozd~$0{,}49$). Prednost je značilna po večih merilih: razlika kumulativnega donosa po oknih je za gradientni gozd in LSTM značilna pri $p<0{,}01$ ter za Black-Litterman in zgodovinski cevovod pri $p<0{,}05$; test razlike Sharpovih količnikov~\cite{ledoitwolf2008,memmel2003} (Newey-West HAC in stacionarno samovzorčenje~\cite{politis1994}) to potrdi ($\Delta$SR do~$+0{,}47$, $p$ do~$0{,}002$); od $12$~parnih testov (trije algoritmi $\times$ štiri reference) jih $10$ prestane popravek Benjamini-Hochberg za mnogotere teze~\cite{benjamini1995}. Najbolj prepričljiv je na izbiro popravljeni Sharpov količnik~\cite{baileylopez2014}: ob upoštevanju, da smo preizkusili okoli~$24$~različic strategij, ostaneta z verjetnostjo $\text{DSR}>0{,}95$ značilno pozitivna \emph{le} transformer ($0{,}997$) in ansambel ($0{,}998$), medtem ko \emph{vse} reference tej korekciji podležejo (zgodovinski~$0{,}867$, Black-Litterman~$0{,}835$, LSTM~$0{,}840$, gradientni gozd~$0{,}710$). Za zunanjo umestitev: kanonična referenca strojno-učnega napovedovanja donosov~\cite{gu2020} poroča za nevronsko mrežo zunaj-vzorčni letni Sharpov količnik~$1{,}35$ (utežen po kapitalizaciji) na dolgo-kratki decilni strategiji nad celotnim presekom ameriških delnic. Naš dolgo-only, kardinalno omejeni in po stroških popravljeni Sharpe~$0{,}96$ je torej v verodostojnem razponu, ki ga ta literatura vzpostavlja za naučene napovedne signale, a pod bistveno strožjimi (konservativnejšimi) omejitvami --- kar govori v prid ekonomske smiselnosti transformerskega signala.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Združeni rezultati čez vseh šest režimov ($n\approx 254$ oken, algoritem PSO). Letni Sharpov količnik na zloženih dnevnih donosih; parni preizkusi glede na transformer: razlika kum.\ donosa na okno ($\Delta$don.), $p$-vrednost tega testa, in razlika letnega Sharpa ($\Delta$SR) s HAC $p$-vrednostjo; ter na izbiro popravljeni Sharpov količnik (DSR).}
+  \label{tab:pooled}
+  \small
+  \begin{tabular}{lrrrrr}
+    \hline
+    Strategija & Sharpe & $\Delta$don.\% & $p$ & $\Delta$SR & DSR\\
+    \hline
+    Transformer          & 0{,}96 & ---   & ---     & ---    & 0{,}997\\
+    Ansambel             & 0{,}99 & ---   & ---     & ---    & 0{,}998\\
+    Zgodovinski          & 0{,}61 & $+1{,}14$ & 0{,}030 & $+0{,}35$ & 0{,}867\\
+    Black-Litterman      & 0{,}58 & $+1{,}22$ & 0{,}031 & $+0{,}38$ & 0{,}835\\
+    LSTM                 & 0{,}58 & $+1{,}17$ & 0{,}002 & $+0{,}38$ & 0{,}840\\
+    Gradientni gozd      & 0{,}49 & $+1{,}61$ & $<0{,}001$ & $+0{,}47$ & 0{,}710\\
+    \hline
+  \end{tabular}
+\end{table}
+
+\paragraph{Poštena omejitev.} Prednost transformerja je torej trdna in značilna nasproti strojnim in klasičnim modelom napovedi ($\vec{\mu}$), zoprstavi pa se ji le en rezultat: prednost pred \emph{golim zgodovinskim povprečjem} ostaja ekonomsko smiselna, a statistično mejna ($\Delta$don.\ $+1{,}1\,\%$ na okno; test razlike Sharpa $\Delta$SR $+0{,}35$, $p\approx 0{,}06$). To je pošteno predstaviti kot mejno in ne kot dokazano prednost. Vloga ansambla je prav zato v robustnosti: njegova meja obžalovanja~\cite{freund1997} zagotavlja, da tudi v režimu, kjer transformer izgubi, kombinacija ne zaostane za zgodovinsko referenco. To se v poskusih tudi potrdi (slika~\ref{fig:ensadv}): v režimu \emph{headline} 2019--2022, edinem, kjer transformerski cevovod (letni Sharpov količnik~$0{,}37$) zaostane za zgodovinskim ($0{,}43$), ansambel Hedge ($0{,}48$) celo \emph{prekaša oba} eksperta --- učbeniški primer, da spletna kombinacija napovedi ne zaostane za najboljšim posameznim virom.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{ensemble_advantage_headline}
+  \caption{Prednost ansambla v režimu, kjer transformer zaostane za zgodovinskim (\emph{headline} 2019--2022). Trije paneli s skupno osjo~$y$ prikazujejo kumulativni donos treh cevovodov; v vsakem so posamezne metahevristike PSO (zelena), SA (rdeča) in GA (vijolična) ter pasivna~$1/N$ (pikčasta) kot referenca. Naslov panela navaja letni Sharpov količnik in končni donos za reprezentativni solver PSO; znotraj vsakega panela se solverji tesno ujemajo. To je edini od šestih režimov, v katerem transformerski cevovod (Sharpe~$0{,}37$) zaostane za zgodovinskim ($0{,}43$); ansambel Hedge pa kljub temu prekaša \emph{oba} eksperta (Sharpe~$0{,}48$, končni donos~$52\,\%$ proti~$39\,\%$ in~$29\,\%$) --- neposredna ponazoritev meje obžalovanja postopka Hedge~\cite{freund1997}.}
+  \label{fig:ensadv}
+\end{figure}
+
+\paragraph{Optimizatorji in klasične strategije.} Metahevristike v vseh režimih tesno sledijo skoraj-eksaktni referenci --- optimalnostna vrzel je zanemarljiva, skladno z rezultati na OR-Library --- zato izbira med njimi ne spremeni zaključkov (vsi trije algoritmi dajo skladne značilnosti v tabeli~\ref{tab:pooled}). Boljša uspešnost transformerja pride po ceni višjega obrata portfelja (napovedi se vsako okno posodobijo), a neto Sharpov količnik po odbitih stroških ostane najvišji. Kot pri drugih vzorcih tudi tu velja opozorilo DeMiguela in sod.~\cite{demiguel2009}: v posameznih (zlasti umirjenih) režimih preproste strategije brez~$\vec{\mu}$ (GMV, $1/N$) ostajajo močne, zato je vztrajno pozitiven napovedni signal transformerja toliko pomembnejši. Slika~\ref{fig:walkforward} prikazuje kumulativne donose v dveh nasprotnih režimih.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{walkforward_divuniverse_panels}\\[2pt]
+  \includegraphics[width=\linewidth]{walkforward_gfc_panels}
+  \caption{Kumulativni donos vseh treh metahevristik (PSO, SA, GA) v dveh nasprotnih režimih: umirjeno obdobje \emph{divuniverse} 2019--2022 (zgoraj) in globalna finančna kriza 2007--2010 (spodaj). V vsakem režimu levi panel prikazuje transformerski cevovod, desni pa ansambelski (Hedge); kot referenca sta v obeh dodana klasični zgodovinski cevovod (siva črtkana) in pasivna strategija $1/N$ (pikčasta). Vse tri metahevristike se znotraj panela tesno ujemajo --- optimalnostna vrzel je zanemarljiva --- in vse opazno prekašajo klasični cevovod ter $1/N$; prednost je najizrazitejša v krizi.}
+  \label{fig:walkforward}
+\end{figure}
+
+\paragraph{Umestitev med sorodno literaturo.} Ker je naša kombinacija (presečni transformer $+$ dolgo-only kardinalno omejeni mean-variance $+$ večrežimsko walk-forward vrednotenje) v literaturi skoraj edinstvena, neposredna številčna primerjava z drugimi študijami ni smiselna --- univerzumi, obdobja, omejitve in stroškovni modeli se razlikujejo, zato bi vzporejanje absolutnih Sharpovih količnikov zavajalo. Tabela~\ref{tab:related} zato služi kot \emph{umestitev} reda velikosti med sorodne študije s postopnim vrednotenjem globokih napovednih modelov za sestavo portfelja. Iz nje izhajata dve ugotovitvi. Prvič, naš po stroških popravljeni Sharpov količnik~$0{,}96$ je v verodostojnem razponu, ki ga ta literatura vzpostavlja za naučene napovedne signale: kanonična referenca~\cite{gu2020} poroča~$1{,}35$ (kapitalsko utežen) za dolgo-kratko decilno strategijo nad celotnim presekom ameriških delnic, Fernandes in Desell~\cite{fernandes2026} pa v zahtevnem obdobju 2022--2023 premagata indeks za~$12$~odstotnih točk. Drugič --- in to je ključno za znanstveno moč sklepa --- je naša študija med naštetimi \emph{edina}, ki hkrati (i)~vsiljuje realno dolgo-only kardinalno omejitev, (ii)~upošteva transakcijske stroške, (iii)~pokriva šest tržnih režimov in (iv)~poroča na izbiro popravljeni Sharpov količnik. Več navedenih študij dopušča kratke pozicije~\cite{jeon2026,gu2020} ali opušča stroške~\cite{jeon2026,barua2022}, kar zviša njihove količnike; naš protokol je torej med najstrožjimi, absolutne vrednosti pa niso neposredno primerljive.
+
+\begin{table*}[htbp]
+  \centering
+  \caption{Umestitev med sorodne študije s postopnim (walk-forward) vrednotenjem globokih/strojnih napovednih modelov za sestavo portfelja. \textbf{Vrednosti niso neposredno primerljive} (različni univerzumi, obdobja, omejitve in stroškovni modeli); tabela služi kot pregled reda velikosti in metodološke umestitve, ne kot neposredna primerjava. Naša študija je edina, ki hkrati uporablja dolgo-only kardinalno omejitev, upošteva transakcijske stroške, pokriva šest režimov in poroča na izbiro popravljeni Sharpov količnik (DSR).}
+  \label{tab:related}
+  \footnotesize
+  \begin{tabularx}{\textwidth}{@{}l X X X X@{}}
+    \hline
+    Študija & Model $\to$ portfelj & Univerzum, obdobje & Vrednotenje & Glavni izsledek (OOS)\\
+    \hline
+    \textbf{To delo} & transformer (MASTER) $\to$ kard.\ MV & 48 ZDA large-cap, 6 režimov 2007--2024 & walk-forward, dolgo-only, 10 bps & Sharpe~$0{,}96$; edini prestane DSR\\
+    Fernandes \& Desell~\cite{fernandes2026} & AttentionLSTM $\to$ uteži & 50 S\&P 500, 2007--2023 & walk-forward, četrtletno, stroški & Sharpe~$0{,}29$; $+12$pp nad indeksom\\
+    Jeon in sod.~\cite{jeon2026} & decision-focused $\to$ redki tangentni & 4 svet.\ indeksi, 2016--2025 & rolling, dolgo-\emph{kratki}, brez strošk. & Sharpe do~$2{,}10$\\
+    Zhu \& Yen~\cite{zhu2024} & Transformer-GAN $\to$ Black-Litterman & ZDA delnice, OOS & out-of-sample & prekaša klasični BL / napovedi\\
+    Barua \& Sharma~\cite{barua2022} & CNN-BiLSTM $\to$ dinamični BL & 10 MSCI Asia-Pacific, 20 let & rolling, brez strošk. & prekaša primerjalne portfelje\\
+    Bessler in sod.~\cite{bessler2017} & klasične ocene $\to$ BL/MV/naivni & večrazredni, dolgo obdobje & out-of-sample & BL $>$ MV/min-var/naivni\\
+    Gu, Kelly \& Xiu~\cite{gu2020} & nevronska mreža $\to$ dolgo-kratki decili & celoten presek ZDA, 1957--2016 & rolling, dolgo-\emph{kratki} & Sharpe~$1{,}35$ (kap.-utežen)\\
+    \hline
+  \end{tabularx}
+\end{table*}
+
+\section{Sklep}
+V delu smo predstavili in implementirali celovit cevovod za kardinalno omejeno optimizacijo portfelja, ki sodoben presečni napovedni model donosov (transformer tipa MASTER) povezuje s tremi klasičnimi metahevristikami, izvedenimi v jeziku C++. Ključna zasnovna odločitev je bila ločitev dveh virov težavnosti: oceno pričakovanih donosov in tveganja prepustimo napovednemu modelu, kombinatorično-nekonveksno optimizacijo pa metahevristikam, katerih kakovost neodvisno preverimo na standardnih primerih OR-Library. Tam se algoritmi približajo objavljeni neomejeni fronti na okoli odstotek pri manjših in nekaj odstotkov pri večjih univerzah, pri čemer sta najbolj robustna rojenje delcev in genetski algoritem, na realnih podatkih pa se tesno ujemajo s skoraj-eksaktno referenco --- optimalnostna vrzel je zanemarljiva.
+
+Osrednje empirično vprašanje --- ali transformerski cevovod (model~$\vec{\mu}$ + model~$\vec{\Sigma}$) izboljša klasični zgodovinski cevovod --- smo ovrednotili v šestih tržnih režimih z združevanjem oken ($n\approx 254$). Odgovor je pritrdilen, a niansiran. Transformer je edini vir napovedi s pozitivno zunaj-vzorčno napovedno močjo (združeni IC $+0{,}020$ proti nič ali negativnim vrednostim pri vseh referencah) in doseže najvišji tvegano prilagojeni donos (letni Sharpov količnik~$0{,}96$, ansambel~$0{,}99$). Njegova prednost pred strojnimi in klasičnimi modeli napovedi (LSTM, gradientni gozd, Black-Litterman) je statistično značilna po večih robustnih merilih, kar je najpomembneje pa je transformer skupaj z ansamblom \emph{edini}, ki prestane na izbiro popravljeni (deflated) Sharpov količnik~\cite{baileylopez2014}, ko upoštevamo število preizkušenih strategij. Poštena omejitev ostaja, da je prednost pred golim zgodovinskim povprečjem le ekonomsko smiselna, a statistično mejna ($p\approx 0{,}06$); zato ansambel s postopkom Hedge~\cite{freund1997} predstavimo kot plast robustnosti, ki po zasnovi (meja obžalovanja) v nobenem režimu ne zaostane za najboljšim virom, ne pa kot glavni rezultat. Skladno z opozorilom DeMiguela in sod.~\cite{demiguel2009} v posameznih umirjenih režimih preproste strategije brez~$\vec{\mu}$ ostajajo močne, kar poudarja, da je vztrajno pozitiven napovedni signal transformerja poglavitni prispevek.
+
+Delo je mogoče nadgraditi v več smereh. Napovedni del bi lahko obogatili z dodatnimi vhodnimi značilkami (obseg trgovanja, makroekonomski in temeljni dejavniki), kovariančno glavo pa učili na realiziranih kovariancah iz visokofrekvenčnih podatkov. Na strani optimizacije bi bilo smiselno preizkusiti večciljne različice, ki bi celotno fronto trasirale v enem zagonu, ter dodatne realistične omejitve (transakcijski stroški neposredno v ciljni funkciji, omejitve po sektorjih). Za strožjo oceno prekomernega prilagajanja bi kazalo dodati kombinatorično-simetrično navzkrižno preverjanje in verjetnost prekomernega prilagajanja pri postopnem testiranju~\cite{baileylopez2014}. Nazadnje bi bilo cevovod vredno preizkusiti na več trgih in daljših obdobjih, da bi še utrdili oceno robustnosti napovednega signala skozi tržne režime.
+
+% The acknowledgemenst content (not mandatory).
+%\acknow{Zahvala.}
+
+% Bibliography
+\bibliography{{bib/bibliography}}
+
+\end{document}
