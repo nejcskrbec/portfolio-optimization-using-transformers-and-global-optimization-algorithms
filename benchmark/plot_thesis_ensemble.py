@@ -28,8 +28,8 @@ import matplotlib.ticker as mtick
 import matplotlib.dates as mdates
 
 RESULTS_DIR = os.path.join(os.path.dirname(__file__), "..", "test_results")
-PKL   = "results_201901_202212.pkl"       # headline 2019--2022 (z velikani)
-START = "2019-01-01"
+PKL   = "results_201906_202112_covid2020.pkl"   # COVID 2019-06..2021-12 (edini režim, kjer transformer zaostane za zgodovino)
+START = "2019-06-01"
 
 ALGO_COLOR = {"pso": "#2ca02c", "sa": "#d62728", "ga": "#9467bd"}
 ALGO_LABEL = {"pso": "PSO", "sa": "SA", "ga": "GA"}
@@ -94,10 +94,10 @@ def main():
         ax.legend(loc="upper left", framealpha=0.9, fontsize=8.5)
 
     axes[0].set_ylabel("Kumulativen donos (%)")
-    fig.suptitle("headline 2019–2022: transformer zaostane za zgodovinskim, "
-                 "ansambel prekaša oba", fontweight="bold", y=1.02)
+    fig.suptitle("COVID 2020: transformer zaostane za zgodovinskim, "
+                 "ansambel sledi zmagovalnemu ekspertu", fontweight="bold", y=1.02)
 
-    out = os.path.join(RESULTS_DIR, "ensemble_advantage_headline.png")
+    out = os.path.join(RESULTS_DIR, "ensemble_advantage_covid.png")
     fig.savefig(out, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"  shranjeno: {os.path.abspath(out)}")
