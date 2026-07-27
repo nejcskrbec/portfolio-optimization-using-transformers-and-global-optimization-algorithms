@@ -1,0 +1,237 @@
+%================================================================
+% Poglavje 4: Globalni optimizacijski algoritmi
+%================================================================
+\chapter{Globalni optimizacijski algoritmi}
+\label{ch:algoritmi}
+
+V razdelku~\ref{sec:ccmv} smo videli, da je kardinalno omejeni problem NP-težek: klasične kvadratne metode ga ne rešujejo, izčrpno preiskovanje vseh~$\binom{N}{K}$ naborov sredstev pa je za realistične~$N$ neizvedljivo. Kako torej najti dobro rešitev v sprejemljivem času? V tem poglavju najprej formaliziramo optimizacijski problem in razvrstimo pristope za njegovo reševanje, nato pa podrobno predstavimo tri metahevristike, ki jih uporabljamo. Vsako najprej opredelimo z definicijami ključnih pojmov, nato pa opišemo njeno izvajanje s psevdokodo.
+
+\section{Globalna optimizacija in metahevristike}
+\label{sec:globalna}
+
+\paragraph{Optimizacijski problem.} \emph{Optimizacijski problem} je par~$(\mathcal{X}, c)$, kjer je~$\mathcal{X}$ \emph{dopustna množica} (množica vseh rešitev, ki zadostijo omejitvam problema), $c:\mathcal{X}\to\mathbb{R}$ pa \emph{kriterijska funkcija}. Iščemo
+\begin{equation}
+\label{eq:optprob}
+  \vec{x}^\star = \arg\min_{\vec{x}\in\mathcal{X}} c(\vec{x}).
+\end{equation}
+Množici~$\mathcal{X}$ rečemo tudi \emph{prostor rešitev}. Za KOMV je~$\mathcal{X}$ množica vseh parov~$(\vec{w},\vec{z})$, ki zadostijo omejitvam~\eqref{eq:c-sum}--\eqref{eq:c-box}, $c$ pa negativni mean-variance kriterij~\eqref{eq:objective}; ker je izbir sredstev~$\binom{N}{K}$, je prostor rešitev kombinatorično velik.
+
+\paragraph{Globalni in lokalni optimum.} Rešitev~$\vec{x}^\star\in\mathcal{X}$ je \emph{globalni optimum}, če velja~$c(\vec{x}^\star)\le c(\vec{x})$ za vse~$\vec{x}\in\mathcal{X}$. \emph{Sosednost}~$\mathcal{N}(\vec{x})\subseteq\mathcal{X}$ je množica rešitev, ki jih iz~$\vec{x}$ dosežemo z eno elementarno potezo (npr.\ zamenjavo enega izbranega sredstva). Rešitev~$\vec{x}$ je \emph{lokalni optimum} glede na~$\mathcal{N}$, če velja~$c(\vec{x})\le c(\vec{x}')$ za vse~$\vec{x}'\in\mathcal{N}(\vec{x})$. Glavna težava preproste ``pohlepne'' optimizacije je, da obtiči v lokalnem optimumu, ki ni globalni; dobra metoda mora zato prostor rešitev \emph{raziskovati}, ne le \emph{izkoriščati} trenutno najboljše okolice.
+
+\begin{primer}
+\label{pr:optimum}
+Slika~\ref{fig:pr-opt} prikazuje kriterijsko funkcijo~$c$ z več minimumi. Pohlepen postopek, ki vedno sprejme le izboljšave, se iz začetne rešitve spusti v najbližji minimum in tam obtiči --- lokalni optimum (oranžno), ki pa ni globalni (rdeče). Da bi našli globalni optimum, mora postopek občasno sprejeti tudi slabšo rešitev in tako preiti ``hrib'' med minimumoma; ta zmožnost je bistvo metahevristik, ki jih obravnavamo v nadaljevanju.
+\end{primer}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.72\linewidth]{primer_optimum}
+  \caption{Lokalni in globalni optimum kriterijske funkcije z več minimumi. Pohlepno lokalno iskanje obtiči v lokalnem optimumu; metahevristike znajo pobegniti proti globalnemu.}
+  \label{fig:pr-opt}
+\end{figure}
+
+\paragraph{Razvrstitev pristopov.} Metode globalne optimizacije v grobem delimo na \emph{deterministične} (pri istem vhodu vedno vrnejo isti rezultat; zanesljive, a za velike prostore rešitev pogosto neizvedljive) in \emph{stohastične} (prostor preiskujejo naključno; za isti vhod ne vrnejo nujno istega rezultata, a so za velike prostore uporabnejše). Najpreprostejši stohastični pristop je \emph{popolnoma naključno iskanje}, ki zgenerira~$N$ naključnih rešitev in izbere najboljšo; njegova slabost je, da ne izkorišča že najdenih dobrih rešitev.
+
+\paragraph{Metahevristike.} \emph{Metahevristika} je splošna stohastična strategija iskanja, ki uravnava razmerje med raziskovanjem (angl.\ \emph{exploration}) in izkoriščanjem (angl.\ \emph{exploitation}) ter jo je mogoče uporabiti za širok razred problemov. Glede na to, koliko rešitev hkrati vzdržujejo, jih delimo na:
+\begin{itemize}
+  \item \emph{postopke lokalnega iskanja}, ki vzdržujejo eno samo trenutno rešitev in se premikajo po njeni sosednosti (npr.\ simulirano ohlajanje);
+  \item \emph{populacijske postopke}, ki vzdržujejo množico (populacijo) rešitev in jih razvijajo skupaj (npr.\ rojenje delcev in genetski algoritem).
+\end{itemize}
+Vse metahevristike sledijo skupni shemi: (i)~\emph{inicializacija} začetne rešitve ali populacije, (ii)~\emph{iteracija}, v kateri z naključnimi potezami generiramo nove kandidatne rešitve, jih ovrednotimo s kriterijsko funkcijo in izberemo, katere obdržimo, ter (iii)~\emph{ustavitev} ob izpolnjenem končnem pogoju. Ključno je, da uravnavajo razmerje med raziskovanjem (da se izognejo lokalnim optimumom) in izkoriščanjem (da izboljšujejo dobre rešitve). V nadaljevanju predstavimo tri uveljavljene metahevristike, vsako v izvedbi, zvesti izvirnemu članku.
+
+\section{Skupni okvir}
+\label{sec:okvir}
+
+Vsi trije algoritmi minimizirajo isto \emph{kriterijsko funkcijo} --- negativni mean-variance kriterij
+\begin{equation}
+\label{eq:objective}
+  c(\vec{w}) = -\big(P\,\vec{\mu}^{\!\top}\vec{w} - (1-P)\,\vec{w}^{\!\top}\vec{\Sigma}\vec{w}\big),
+\end{equation}
+pod kardinalno omejitvijo~$K$ in mejami uteži~$[\varepsilon_i,\delta_i]$. Rešitev predstavimo z \emph{indikatorskim} vektorjem~$\vec{z}\in\{0,1\}^N$ (katera sredstva so izbrana) in vektorjem uteži~$\vec{w}$. Ker morajo rešitve zadostiti omejitvam, vsak algoritem uporablja \emph{popravilo} (angl.\ \emph{repair}): postopek, ki poljubno rešitev projicira na dopustno množico tako, da število izbranih sredstev uravna na~$K$ in uteži normira, da vsota znaša~1 ob upoštevanju mej. Pomembno je, da vse tri izvedbe uporabljajo \emph{izključno naključne} poteze pri iskanju (brez uporabe~$\vec{\mu}$ ali~$\vec{\Sigma}$ v samem koraku iskanja), tako da napovedni signal vstopi le prek kriterijske funkcije~\eqref{eq:objective}. S tem ostane primerjava med zgodovinskim in transformerskim~$\vec{\mu}$ čista.
+
+\begin{primer}
+\label{pr:kard}
+Slika~\ref{fig:pr-kard} ponazarja popravilo pri~$K=4$. Levo je rešitev z osmimi neničelnimi utežmi (krši kardinalno omejitev). Popravilo obdrži~$K=4$ sredstva z največjimi utežmi, ostala nastavi na nič in preostale uteži normira, da se seštejejo v~1 (desno). Vsaka ovrednotena rešitev ima torej natanko~$K$ neničelnih uteži --- prav zato ima portfelj v \emph{vsakem} walk-forward oknu natanko~$K$ sredstev, čeprav se izbrana množica med okni spreminja.
+\end{primer}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{primer_kardinalnost}
+  \caption{Popravilo na kardinalno omejitev ($K{=}4$): rešitev z osmimi neničelnimi utežmi (levo) se projicira na štiri največje, ki se normirajo v vsoto~1 (desno).}
+  \label{fig:pr-kard}
+\end{figure}
+
+\section{Rojenje delcev}
+\label{sec:pso}
+
+Rojenje delcev (RD; angl.\ \emph{particle swarm optimization}; Kennedy in Eberhart~\cite{kennedy1995}) posnema gibanje jate: populacija ``delcev'' se giblje po prostoru rešitev, vsak pod vplivom svoje in skupinske izkušnje. Sledimo izvedbi Cure~\cite{cura2009}, prilagojeni kardinalni omejitvi.
+
+\subsection{Definicije}
+\emph{Delec} je kandidatna rešitev, ki jo opišemo z indikatorskim vektorjem~$\vec{z}$ in vektorjem uteži~$\vec{w}$. \emph{Hitrost} delca sta vektorja~$\vec{v}_z$ in~$\vec{v}_w$, ki določata spremembo indikatorjev oziroma uteži v naslednji iteraciji. \emph{Osebni najboljši} položaj je najboljša rešitev, ki jo je delec doslej obiskal, \emph{globalni najboljši} pa najboljša rešitev celotne populacije. \emph{Izbirna mera} (Cura) je za vsako sredstvo vnaprej izračunana ocena privlačnosti (razmerje med prispevkom k donosu in prispevkom k tveganju), ki jo uporablja postopek popravila. \emph{Popravilo (arrange)} indikatorje uravna na~$K$: sredstva dodaja oziroma odstranjuje, pri čemer se z verjetnostjo~$\tfrac12$ odloči naključno, sicer pa po izbirni meri (doda najprivlačnejše, odstrani najmanj privlačno).
+
+\subsection{Izvajanje RD}
+Postopek povzema Algoritem~\ref{alg:pso}. Delci se inicializirajo naključno in popravijo na~$K$ sredstev. V vsaki iteraciji vsak delec posodobi hitrost kot uteženo kombinacijo privlačnosti k osebnemu in globalnemu najboljšemu (s koeficientoma~$\omega_1,\omega_2$, vzorčenima iz~$U[0,2]$), nato posodobi indikatorje (prek sigmoidne funkcije praga) in uteži, se popravi na dopustno rešitev ter ovrednoti. Če je nova rešitev boljša od osebnega oziroma globalnega najboljšega, se ta posodobi.
+
+\begin{algorithm}[htbp]
+\caption{Rojenje delcev (RD) za KOMV}
+\label{alg:pso}
+\begin{algorithmic}[1]
+\footnotesize
+\REQUIRE $\vec{\mu}$, $\vec{\Sigma}$, kardinalnost $K$, velikost populacije $P$, št.\ generacij $G$
+\ENSURE portfelj $\vec{w}^\star$
+\STATE predizračunaj izbirno mero $c_i$ za vsa sredstva
+\FOR{vsak delec $p=1,\dots,P$}
+  \STATE naključno izberi $K$ sredstev, nastavi uteži; popravi na dopustno rešitev
+  \STATE ovrednoti $c(\vec{w}_p)$; osebni najboljši $\gets$ trenutni
+\ENDFOR
+\STATE globalni najboljši $\gets$ najboljši delec
+\FOR{iteracijo $=1,\dots,\lfloor G\cdot P / P\rfloor$}
+  \FOR{vsak delec $p$}
+    \STATE vzorči $\omega_1,\omega_2 \sim U[0,2]$
+    \STATE posodobi hitrost in indikatorje $\vec{z}_p$ (sigmoidni prag), nato uteži $\vec{w}_p$
+    \STATE popravi $\vec{z}_p,\vec{w}_p$ na dopustno rešitev (\emph{arrange})
+    \STATE ovrednoti $c(\vec{w}_p)$
+    \IF{boljši od osebnega najboljšega} \STATE posodobi osebni najboljši \ENDIF
+    \IF{boljši od globalnega najboljšega} \STATE posodobi globalni najboljši \ENDIF
+  \ENDFOR
+\ENDFOR
+\RETURN uteži globalnega najboljšega
+\end{algorithmic}
+\end{algorithm}
+
+\begin{primer}
+\label{pr:pso}
+Slika~\ref{fig:pr-pso} ponazarja premik enega delca v (poenostavljenem dvorazsežnem) prostoru rešitev, katerega izolinije prikazujejo kriterijsko funkcijo. Delec (moder) se premakne pod vplivom dveh privlačnosti: k svojemu osebnemu najboljšemu položaju (oranžno) in h globalnemu najboljšemu položaju roja (rdeče). Novi položaj (zeleno) je vsota trenutne hitrosti in obeh privlačnosti, uteženih z naključnima koeficientoma~$\omega_1,\omega_2\sim U[0,2]$. Roj tako postopoma konvergira proti obetavnim območjem, hkrati pa naključnost ohranja raziskovanje.
+\end{primer}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.62\linewidth]{primer_pso}
+  \caption{Premik delca pri rojenju delcev: delec se giblje pod vplivom privlačnosti k osebnemu (oranžno) in globalnemu (rdeče) najboljšemu položaju; rezultat je nov položaj (zeleno).}
+  \label{fig:pr-pso}
+\end{figure}
+
+\section{Simulirano ohlajanje}
+\label{sec:sa}
+
+Simulirano ohlajanje (SO; angl.\ \emph{simulated annealing}; Kirkpatrick in sod.~\cite{kirkpatrick1983}) izvira iz metalurgije: na začetku sprejema tudi slabše rešitve, z nižanjem ``temperature'' pa postaja vse bolj selektivno. Sledimo izvedbi Crame in Schynsa~\cite{cramaschyns2003}.
+
+\subsection{Definicije}
+\emph{Temperatura}~$T$ določa verjetnost, s katero algoritem sprejme slabšo rešitev: pri višji temperaturi z večjo verjetnostjo. \emph{Temperaturni urnik} tvorita začetna temperatura~$T_0$ in način nižanja; uporabimo geometrijsko ohlajanje~$T' \gets \alpha\,T$ s faktorjem~$\alpha\in(0,1)$. \emph{Sosednostna funkcija} iz trenutne rešitve tvori natanko eno sosednjo (v našem primeru z naključno zamenjavo enega izbranega sredstva za neizbrano ali s premikom uteži). \emph{Verjetnostna funkcija} določi, ali novo rešitev sprejmemo: če je boljša, jo vedno sprejmemo, sicer pa z verjetnostjo~$\exp(-\Delta/T)$, kjer je~$\Delta>0$ poslabšanje kriterija. \emph{Končni pogoj} ustavi postopek, ko dosežemo najnižjo temperaturo ali največje število iteracij.
+
+\subsection{Izvajanje SO}
+Postopek povzema Algoritem~\ref{alg:sa}. Iz naključne začetne rešitve v vsaki iteraciji s sosednostno funkcijo tvorimo novo rešitev; boljšo sprejmemo vedno, slabšo pa z verjetnostjo, odvisno od poslabšanja in trenutne temperature. Po vsakem koraku temperaturo znižamo.
+
+\begin{algorithm}[htbp]
+\caption{Simulirano ohlajanje (SO) za KOMV}
+\label{alg:sa}
+\begin{algorithmic}[1]
+\footnotesize
+\REQUIRE $\vec{\mu}$, $\vec{\Sigma}$, $K$, začetna temp.\ $T_0$, min.\ temp.\ $T_{\min}$, faktor $\alpha$
+\ENSURE portfelj $\vec{w}^\star$
+\STATE $\vec{w} \gets$ naključna dopustna rešitev; $\vec{w}^\star \gets \vec{w}$; $T \gets T_0$
+\WHILE{$T > T_{\min}$ in ni doseženo max.\ iteracij}
+  \STATE $\vec{w}' \gets$ sosednostna funkcija($\vec{w}$) \COMMENT{naključna poteza + popravilo}
+  \STATE $\Delta \gets c(\vec{w}') - c(\vec{w})$
+  \IF{$\Delta < 0$}
+    \STATE $\vec{w} \gets \vec{w}'$; \textbf{če} $c(\vec{w}') < c(\vec{w}^\star)$ \textbf{potem} $\vec{w}^\star \gets \vec{w}'$
+  \ELSE
+    \STATE $r \gets \mathrm{rand}(0,1)$; \textbf{če} $\exp(-\Delta/T) > r$ \textbf{potem} $\vec{w} \gets \vec{w}'$
+  \ENDIF
+  \STATE $T \gets \alpha\,T$ \COMMENT{geometrijsko ohlajanje}
+\ENDWHILE
+\RETURN $\vec{w}^\star$
+\end{algorithmic}
+\end{algorithm}
+
+\begin{primer}
+\label{pr:sa}
+Slika~\ref{fig:pr-sa} prikazuje verjetnost sprejema slabše rešitve~$e^{-\Delta/T}$ v odvisnosti od poslabšanja~$\Delta$ pri treh temperaturah. Pri visoki temperaturi ($T=1$) algoritem z veliko verjetnostjo sprejme tudi občutno slabše rešitve in tako široko raziskuje prostor; z nižanjem temperature ($T=0{,}2$, nato~$T=0{,}05$) postaja vse bolj selektiven in sprejema le še majhna poslabšanja. Temperaturni urnik torej gladko preide iz raziskovanja v izkoriščanje.
+\end{primer}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.72\linewidth]{primer_sa_sprejem}
+  \caption{Verjetnost sprejema slabše rešitve $e^{-\Delta/T}$ pri simuliranem ohlajanju za tri temperature. Nižja temperatura pomeni bolj selektivno sprejemanje.}
+  \label{fig:pr-sa}
+\end{figure}
+
+\section{Genetski algoritem}
+\label{sec:ga}
+
+Genetski algoritem (GA; angl.\ \emph{genetic algorithm}; Goldberg~\cite{goldberg1989}) posnema mikroevolucijo: populacija rešitev se z izborom, križanjem in mutacijo v zaporednih generacijah razvija proti optimumu. Sledimo izvedbi Changa in sod.~\cite{chang2000}.
+
+\subsection{Definicije}
+\emph{Kromosom} (posameznik) je kandidatna rešitev; kodiramo ga z množico izbranih sredstev~$Q$ in vektorjem deležev~$\vec{s}$, iz katerih z \emph{dekodiranjem} (vodno-polnilna projekcija) dobimo dopustne uteži~$\vec{w}$. \emph{Kriterijska funkcija} je vrednost~\eqref{eq:objective} dekodiranega kromosoma. \emph{Izbor po kolesu sreče} izbere starša z verjetnostjo, sorazmerno njegovi kakovosti (boljši kromosomi imajo večjo verjetnost). \emph{Enakomerno križanje} otroka sestavi tako, da vsako sredstvo neodvisno podeduje od enega od staršev. \emph{Mutacija} z majhno verjetnostjo spremeni deleže ali zamenja izbrano sredstvo. Uporabimo \emph{stabilnostno} (angl.\ \emph{steady-state}) različico, kjer vsaka iteracija ustvari enega otroka, ki zamenja najslabšega člana populacije, če je boljši od njega.
+
+\subsection{Izvajanje GA}
+Postopek povzema Algoritem~\ref{alg:ga}. Populacijo naključno inicializiramo. V vsaki iteraciji z izborom po kolesu sreče izberemo dva starša, ju z enakomernim križanjem in mutacijo združimo v otroka, ga dekodiramo in ovrednotimo ter z njim zamenjamo najslabšega člana, če je boljši.
+
+\begin{algorithm}[htbp]
+\caption{Genetski algoritem (GA) za KOMV}
+\label{alg:ga}
+\begin{algorithmic}[1]
+\footnotesize
+\REQUIRE $\vec{\mu}$, $\vec{\Sigma}$, $K$, velikost populacije $\mathit{NP}$, št.\ generacij $G$
+\ENSURE portfelj $\vec{w}^\star$
+\STATE inicializiraj populacijo naključnih kromosomov; dekodiraj in ovrednoti
+\STATE globalni najboljši $\gets$ najboljši kromosom
+\FOR{iteracijo $=1,\dots,\mathit{NP}\cdot G$}
+  \STATE $s_1,s_2 \gets$ izbor po kolesu sreče (dva starša)
+  \STATE otrok $\gets$ enakomerno križanje($s_1,s_2$); popravi na $K$ sredstev
+  \STATE mutiraj otroka (deleži in/ali zamenjava sredstva)
+  \STATE dekodiraj in ovrednoti otroka
+  \STATE zamenjaj najslabšega člana populacije z otrokom, če je boljši
+  \STATE posodobi globalni najboljši, če je otrok boljši
+\ENDFOR
+\RETURN uteži globalnega najboljšega
+\end{algorithmic}
+\end{algorithm}
+
+\begin{primer}
+\label{pr:ga}
+Slika~\ref{fig:pr-ga} ponazarja križanje in mutacijo pri~$N=8$ sredstvih. Modre celice pomenijo izbrana sredstva. Iz dveh staršev z \emph{enakomernim križanjem} sestavimo otroka, tako da vsako sredstvo neodvisno podeduje od enega od staršev. Otroka nato \emph{mutiramo}: eno izbrano sredstvo odstranimo in namesto njega izberemo drugega (rdeče označeni celici). Mutacija vnese raznolikost, ki postopku pomaga uiti lokalnim optimumom.
+\end{primer}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.82\linewidth]{primer_ga}
+  \caption{Enakomerno križanje in mutacija pri genetskem algoritmu. Otrok podeduje izbor sredstev od obeh staršev; mutacija nato zamenja eno izbrano sredstvo (rdeče).}
+  \label{fig:pr-ga}
+\end{figure}
+
+\section{Implementacija in nastavitve optimizatorjev}
+\label{sec:impl-opt}
+
+Metahevristike so implementirane v jeziku C++ kot en sam prevajalni sklop, ki vključuje vse tri algoritme in skupno redko-zasedeno ciljno funkcijo ter popravilo uteži. Napovedni model (Poglavje~\ref{ch:model}) v jeziku Python izračuna~$\vec{\mu}$ in~$\vec{\Sigma}$, ju zapiše v datoteko JSON in pokliče prevedeni binarni program; ta reši izbrani algoritem in rešitev vrne na standardni izhod, od koder Python razčleni uteži. Takšna ločitev prek datotek je preprosta in neodvisna od jezikovnih vezav.
+
+\paragraph{Redko-zasedena ciljna funkcija.} Ciljno funkcijo~\eqref{eq:objective} optimizator ovrednoti ob vsakem koraku iskanja, zato je njena hitrost ključna. Ker pri kardinalnosti~$K$ prispeva le~$K$ neničelnih uteži, kvadratno obliko~$\vec{w}^{\!\top}\vec{\Sigma}\vec{w}$ računamo zgolj čez neničelne indekse, v času~$O(N+K^2)$ namesto~$O(N^2)$. Podobno predizračunamo Cura-jevo izbirno mero za RD enkrat na klic optimizatorja, saj je odvisna le od~$\vec{\mu}$,~$\vec{\Sigma}$ in~$\lambda$, ki so v oknu fiksni. Ti pohitritvi sta \emph{matematično nevtralni}: vrednosti ciljne funkcije ostanejo enake (do zaokroževanja s plavajočo vejico), zato ne spremenita rezultatov, kar smo potrdili na knjižnici OR-Library (napaka fronte ostane enaka do štirih decimalk).
+
+\paragraph{Hiperparametri.} Za ponovljivost Tabela~\ref{tab:hp-solver} navaja vse hiperparametre optimizatorjev; problemske omejitve (kardinalnost~$K$, meje uteži, parameter tveganja~$P$) so podane pri posameznem poskusu v Poglavju~\ref{ch:eksperiment}.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Hiperparametri metahevristik (skupni ter po algoritmih).}
+  \label{tab:hp-solver}
+  \begin{tabular}{lll}
+    \toprule
+    Algoritem & Parameter & Vrednost\\
+    \midrule
+    skupno & velikost populacije & 200\\
+           & št.\ generacij      & 1500\\
+           & naključno seme                & 42\\
+    \midrule
+    RD    & $\alpha$ (Cura~\cite{cura2009}) & 0{,}06\\
+           & $\omega_1,\omega_2$ & $\sim U[0,2]$\\
+    \midrule
+    SO     & faktor ohlajanja $\alpha$ & 0{,}95\\
+           & začetna verj.\ sprejema   & 0{,}8\\
+           & faktor dolžine stopnje     & 2\\
+           & št.\ ustavitvenih stopenj  & 5\\
+    \midrule
+    GA     & verjetnost mutacije & 0{,}01\\
+           & $\sigma$ mutacije    & 0{,}05\\
+           & izbor / križanje     & kolo sreče / enakomerno\\
+    \bottomrule
+  \end{tabular}
+\end{table}

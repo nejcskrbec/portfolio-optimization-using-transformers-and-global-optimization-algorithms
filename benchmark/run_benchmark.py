@@ -10,6 +10,7 @@ import argparse
 import json
 import os
 import sys
+import time
 
 import yfinance as yf
 
@@ -18,7 +19,7 @@ import yfinance as yf
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
-from benchmark.benchmark_core   import find_binary, run_walkforward
+from benchmark.benchmark_core   import find_binary, run_walkforward, portfolio_daily_returns, run_optimizer
 from benchmark.benchmark_report import (plot_combined_walkforward,
                                          plot_all_algorithms_grid,
                                          plot_weights_grid,
@@ -26,8 +27,8 @@ from benchmark.benchmark_report import (plot_combined_walkforward,
                                          print_prediction_quality,
                                          print_turnover_and_costs,
                                          print_scenario_significance,
+                                         print_efficiency_ranking,
                                          RESULTS_DIR)
-from estimators.multistock_master import train_multistock
 
 
 def _load_optimizer_config(config: dict) -> dict:
@@ -119,17 +120,11 @@ def run_everything(config_path: str):
     except Exception as e:
         print(f"  [opozorilo] Tržni indeks '{market_ticker}' ni na voljo: {e}")
 
-    # Return model — treniraj enkrat na df_train
-    # Edini return model je MASTER-lite cross-sectional transformer (Li et al.
-    # 2024); emitira μ-rang IN skupno-reprezentacijsko Σ iz iste reprezentacije.
+    # Napovedni transformer je TACTiS-2 (spodaj); MASTER-lite je odstranjen.
     # Baseline Σ (vzorčna kovarianca) se računa drseče znotraj walk-forwarda.
-    return_model = mc.get("return_model", "multistock")
-    if return_model != "multistock":
-        raise ValueError(f"Nepodprt return_model='{return_model}'. Podprt: 'multistock'.")
-    print(f"\n{'='*65}\n  RETURN MODEL\n{'='*65}")
-    print("  [MASTER-lite] Cross-sectional multi-stock transformer (Li et al. 2024)...")
-    return_registry = train_multistock(config, df_train, avail_tickers,
-                                       config["run_settings"]["lookahead_days"])
+    print(f"\n{'='*65}\n  NAPOVEDNI MODELI\n{'='*65}")
+
+    timing = {}
 
     # Močan ML μ-baseline (LightGBM) — pošten primerjalni μ (gated)
     ml_registry = None
@@ -137,8 +132,11 @@ def run_everything(config_path: str):
         try:
             from estimators.simple_ml import train_simple_ml
             print("  [SimpleML] LightGBM faktorski μ-baseline (Gu-Kelly-Xiu 2020)...")
+            t0 = time.time()
             ml_registry = train_simple_ml(config, df_train, avail_tickers,
                                           config["run_settings"]["lookahead_days"])
+            timing["train_simpleml"] = time.time() - t0
+            print(f"           → done in {timing['train_simpleml']:.1f}s")
         except Exception as e:
             print(f"  [SimpleML] preskočen ({type(e).__name__}: {e})")
             ml_registry = None
@@ -149,28 +147,97 @@ def run_everything(config_path: str):
         try:
             from estimators.lstm_mu import train_lstm
             print("  [LSTM] Sekvenčni LSTM μ-baseline (Hochreiter & Schmidhuber 1997)...")
+            t0 = time.time()
             lstm_registry = train_lstm(config, df_train, avail_tickers,
                                        config["run_settings"]["lookahead_days"])
+            timing["train_lstm"] = time.time() - t0
+            print(f"         → done in {timing['train_lstm']:.1f}s")
         except Exception as e:
             print(f"  [LSTM] preskočen ({type(e).__name__}: {e})")
             lstm_registry = None
 
+    # TACTiS-2 skupni μ+Σ napovednik (gated: evaluation.tactis.enabled)
+    # Transformer-attentional-copula (Ashok et al. 2024) — napove OBA momenta
+    # iz skupne porazdelitve; alternativa MASTER-lite + scale-matchingu.
+    tactis_registry = None
+    if config.get("evaluation", {}).get("tactis", {}).get("enabled", False):
+        try:
+            from estimators.tactis_estimator import train_tactis
+            print("  [TACTiS] TACTiS-2 skupni μ+Σ napovednik (Ashok et al. 2024)...")
+            t0 = time.time()
+            tactis_registry = train_tactis(config, df_train, avail_tickers,
+                                           config["run_settings"]["lookahead_days"])
+            timing["train_tactis"] = time.time() - t0
+            print(f"          → done in {timing['train_tactis']:.1f}s")
+        except Exception as e:
+            print(f"  [TACTiS] preskočen ({type(e).__name__}: {e})")
+            tactis_registry = None
+
+    # MASTER na amerikai delnicah (gated: evaluation.master.enabled)
+    # ORIGINALNI repo model (SJTU-DMTai/MASTER, Li et al. AAAI 2024), Alpha158 +
+    # tržni gating zgrajena iz yfinance OHLCV (brez Qlib/CSI, teče na torch 2.x).
+    master_registry = None
+    if config.get("evaluation", {}).get("master", {}).get("enabled", False):
+        try:
+            from estimators.master_us import train_master_us
+            print("  [MASTER] MASTER μ-napovednik na ameriških delnicah "
+                  "(Li et al. AAAI 2024, originalni repo)...")
+            t0 = time.time()
+            master_registry = train_master_us(config, df_train, avail_tickers,
+                                               config["run_settings"]["lookahead_days"])
+            timing["train_master"] = time.time() - t0
+            print(f"          → done in {timing['train_master']:.1f}s")
+        except Exception as e:
+            import traceback as _tb
+            print(f"  [MASTER] preskočen ({type(e).__name__}: {e})")
+            _tb.print_exc()
+            master_registry = None
+
+    # TFT (Temporal Fusion Transformer, Lim et al. 2021) μ-napovednik (gated:
+    # evaluation.tft.enabled) — off-the-shelf pytorch-forecasting, splošni
+    # napovedni transformer (μ-only, tretji transformer poleg TACTiS/MASTER).
+    tft_registry = None
+    if config.get("evaluation", {}).get("tft", {}).get("enabled", False):
+        try:
+            from estimators.tft_mu import train_tft
+            print("  [TFT] Temporal Fusion Transformer μ-napovednik "
+                  "(Lim et al. 2021, pytorch-forecasting)...")
+            t0 = time.time()
+            tft_registry = train_tft(config, df_train, avail_tickers,
+                                     config["run_settings"]["lookahead_days"])
+            timing["train_tft"] = time.time() - t0
+            print(f"       → done in {timing['train_tft']:.1f}s")
+        except Exception as e:
+            import traceback as _tb
+            print(f"  [TFT] preskočen ({type(e).__name__}: {e})")
+            _tb.print_exc()
+            tft_registry = None
+
     # Walk-forward
     binary = find_binary()
     print(f"\n  Optimizator: {binary}")
+    t_wf_start = time.time()
     results = run_walkforward(
         config                = config,
         avail_tickers         = avail_tickers,
         df_train              = df_train,
         df_test               = df_test,
-        return_model_registry = return_registry,
         market_prices         = market_prices,
         test_days             = test_days,
         windows               = windows,
         binary                = binary,
         ml_registry           = ml_registry,
         lstm_registry         = lstm_registry,
+        tactis_registry       = tactis_registry,
+        master_registry       = master_registry,
+        tft_registry          = tft_registry,
     )
+    timing["walkforward_total"] = time.time() - t_wf_start
+    results["timing"] = timing
+    print(f"\n  Časi: {', '.join(f'{k}={v:.0f}s' for k,v in sorted(timing.items()))}")
+
+    # Hedge ensemble REMOVED (2026-08-25): equal-weight Hedge shows <0.1bp IC advantage over adaptive.
+    # Files hedge_ensemble.py and mu_ensemble.py retained for reference/future work.
 
     ar  = results["all_results"]
     br  = results["baseline_results"]

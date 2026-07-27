@@ -94,8 +94,9 @@ def main():
             ax.yaxis.set_major_formatter(mtick.PercentFormatter(decimals=0))
             ax.legend(loc="upper left", framealpha=0.9, fontsize=8.5)
 
-        _draw(axes[0], "Transformer", "Transformer")
-        _draw(axes[1], "Ansambel", "Ansambel (Hedge)")
+        _draw(axes[0], "Transformer", "Transformer (MASTER)")
+        # Ansambel/Hedge removed 2026-08-25; only Transformer shown
+        axes[1].axis("off")
         axes[0].set_ylabel("Kumulativen donos (%)")
         fig.suptitle(title, fontweight="bold", y=1.02)
 

@@ -30,16 +30,13 @@ import matplotlib.ticker as mtick
 RESULTS_DIR = "test_results"
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
-ALL_ALGOS = ["pso", "sa", "ga", "near_exact"]
-# Naše metahevristike (naš prispevek). Near-Exact je le referenca za optimality
-# gap v tabelah → ga NE rišemo v grafih algoritmov/uteži.
-METAHEURISTIC_ALGOS = ["pso", "sa", "ga"]
+ALL_ALGOS = ["pso", "sa"]
+# Naše metahevristike (naš prispevek).
+METAHEURISTIC_ALGOS = ["pso", "sa"]
 
 ALGO_STYLE = {
     "pso":        {"color": "#2ca02c", "label": "PSO"},
     "sa":         {"color": "#d62728", "label": "SA"},
-    "ga":         {"color": "#9467bd", "label": "GA"},
-    "near_exact": {"color": "#000000", "label": "Near-Exact"},
 }
 # Kratke oznake za konzolne tabele (izpeljane iz ALGO_STYLE label).
 ALGO_LABEL = {k: v["label"] for k, v in ALGO_STYLE.items()}
@@ -48,9 +45,8 @@ SCENARIO_STYLE = {
     "Transformer":   {"linestyle": "-",  "alpha": 1.0},
     "Transformer+Σ": {"linestyle": ":",  "alpha": 0.85},
     "Zgodovinski":   {"linestyle": "--", "alpha": 0.55},
-    "Ansambel":      {"linestyle": "-.", "alpha": 0.95},
 }
-# Neznani scenariji ne smejo sesuti risanja (npr. novi Ansambel) → varen default.
+# Neznani scenariji ne smejo sesuti risanja → varen default.
 _SCENARIO_STYLE_DEFAULT = {"linestyle": "-", "alpha": 0.9}
 
 # Barva PO SCENARIJU (za razčiščen combined graf, kjer prikažemo le en
@@ -58,13 +54,14 @@ _SCENARIO_STYLE_DEFAULT = {"linestyle": "-", "alpha": 0.9}
 SCENARIO_COLOR = {
     "Zgodovinski": "#7f7f7f",   # siva  — klasična osnova
     "Transformer": "#1f77b4",   # modra — transformer pipeline
-    "Ansambel":    "#d62728",   # rdeča — Hedge ansambel
+    "TACTiS":      "#2ca02c",   # zelena — TACTiS-2 μ+Σ pipeline
+    "MASTER":      "#9467bd",   # vijolična — MASTER (Alpha158 + tržni gating)
+    "TFT":         "#e377c2",   # roza — Temporal Fusion Transformer
 }
 # En reprezentativni METAHEVRISTIČNI solver za combined graf: naše metahevristike
 # rešujejo isti CCMV problem skoraj identično (razlike vidne v all_algorithms_grid),
 # zato combined graf strne dimenzijo algoritma na to eno. PSO (Cura 2009) = hitra in
-# robustna reprezentativna metahevristika. Near-Exact je le referenca (optimality gap
-# v tabelah), NE naš prispevek → tu ga ne kažemo.
+# robustna reprezentativna metahevristika.
 REP_ALGO_COMBINED = "pso"
 
 plt.rcParams.update({
@@ -129,7 +126,7 @@ def plot_combined_walkforward(all_results, baseline_results,
                     color=col, linestyle=ls, linewidth=lw, label=lbl)
 
     # Trije scenariji — po ena krivulja (rep_algo), barvana po scenariju.
-    for scen_name in ["Zgodovinski", "Transformer", "Ansambel"]:
+    for scen_name in ["Zgodovinski", "TACTiS", "MASTER", "TFT", "Transformer"]:
         algos_dict = all_results.get(scen_name, {})
         rets_list = algos_dict.get(rep_algo) or next(
             (v for v in algos_dict.values() if v), [])   # varen fallback
@@ -173,7 +170,6 @@ def plot_all_algorithms_grid(all_results, baseline_results,
     bl_cfg = {
         "1/N":        ("black", ":",  1.5, "1/N (vse)"),
         "1/N@K_zgod": ("gray",  "-.", 1.5, "1/N@K (Zgod.)"),
-        "1/N@K_trans":("brown", "--", 1.5, "1/N@K (Trans.)"),
     }
     bl_series = {k: build_full_series(v, df_test, test_days)
                  for k, v in baseline_results.items()}
@@ -189,7 +185,7 @@ def plot_all_algorithms_grid(all_results, baseline_results,
             if len(cum): ax.plot(dates[:len(cum)], (cum-1)*100,
                                   color=col, linestyle=ls, linewidth=lw, label=lbl)
 
-        for scen_name in ["Zgodovinski", "Transformer", "Ansambel"]:
+        for scen_name in ["Zgodovinski", "TACTiS", "MASTER", "TFT", "Transformer"]:
             if scen_name not in all_results: continue
             rets_list = all_results[scen_name].get(algo, [])
             if not rets_list: continue
@@ -224,7 +220,7 @@ def plot_all_algorithms_grid(all_results, baseline_results,
 
 def plot_weights_grid(all_results_weights, df_test, test_days,
                       avail_tickers, period_tag="", algos=METAHEURISTIC_ALGOS):
-    scenarios_present = [s for s in ["Zgodovinski", "Transformer"]
+    scenarios_present = [s for s in ["Zgodovinski", "TACTiS", "MASTER", "TFT", "Transformer"]
                          if s in all_results_weights]
     num_cols = len(scenarios_present)
     if not num_cols: return
@@ -394,9 +390,7 @@ BASELINE_ROWS = [
     ("RiskParity",      "samo Σ"),
     ("HRP",             "samo Σ"),
     ("1/N@K_zgod",      "Zgodovinski"),
-    ("1/N@K_trans",     "Transformer"),
     ("Markowitz_zgod",  "Zgodovinski"),
-    ("Markowitz_trans", "Transformer"),
 ]
 
 
@@ -576,9 +570,8 @@ def _print_pair_significance(all_results, name_a, name_b, method, W):
         ac = _win_cums(a_list[:m]); bc = _win_cums(b_list[:m])
         m = min(len(ac), len(bc))
         ac, bc = ac[:m], bc[:m]
-        # Preskoči algoritem, kjer je ena stran "prazna" (vsi ~0) — npr. near_exact
-        # NI računan za močne baseline scenarije (ne_this=False) → primerjava proti
-        # ničelni seriji je artefakt (ne resničen ±).
+        # Preskoči algoritem, kjer je ena stran "prazna" (vsi ~0) → primerjava proti
+        # ničelni seriji bi bila artefakt (ne resničen ±).
         if np.allclose(ac, 0.0) or np.allclose(bc, 0.0):
             continue
         diff = ac - bc
@@ -593,30 +586,24 @@ def _print_pair_significance(all_results, name_a, name_b, method, W):
 def print_scenario_significance(all_results, df_test, test_days,
                                 method: str = "wilcoxon"):
     """
-    Parni testi čez okna (per-okno kumulativni donos) za teze-relevantne pare:
-      • Transformer vs Zgodovinski — surova hipoteza (μ transformerja vs zgodovinski).
-      • Ansambel   vs Zgodovinski — GLAVNA trditev reframa: ansambel IZBOLJŠA
-        zgodovinski baseline (kombinacija, ne zamenjava).
-      • Ansambel   vs Transformer — ali kombinacija prekaša čisti transformer
-        (dokaz da robustni sloj doda vrednost, ne le sledi transformerju).
+    Parni testi čez okna (per-okno kumulativni donos). TACTiS-2 je zdaj glavni
+    napovedni (transformerski) pipeline (μ IN Σ iz skupne porazdelitve); primerjamo
+    ga z zgodovinskim baselineom in močnimi klasičnimi baseline-i:
+      • TACTiS vs Zgodovinski     — transformerski pipeline vs klasičen (vzorčna Σ).
+
+      • TACTiS vs SimpleML/BL/LSTM — vs preprost ML / klasičen BL / sekvenčni baseline.
+    Pari, kjer scenarij manjka, se samodejno preskočijo (_print_pair_significance).
     """
     W = 78
-    _print_pair_significance(all_results, "Transformer", "Zgodovinski", method, W)
-    _print_pair_significance(all_results, "Ansambel",    "Zgodovinski", method, W)
-    _print_pair_significance(all_results, "Ansambel",    "Transformer", method, W)
-    # Močni klasični baseline-i (če prisotni)
-    #   Transformer vs Zgodovinski-LW — model pipeline vs MOČAN klasičen (Ledoit-Wolf Σ).
-    #   Transformer vs Transformer-LWΣ — izolira modelsko kov. glavo (model Σ vs shrinkage).
-    #   Transformer vs SimpleML — izolira μ (transformer μ vs preprost LightGBM μ, ista Σ).
-    #   Transformer vs BlackLitterman — μ vs predlagan klasičen BL posterior (ista Σ).
-    #   Transformer vs LSTM — arhitekturna primerjava (transformer vs LSTM, isti cilj/izguba).
-    #   Ansambel   vs Zgodovinski-LW — glavna trditev proti močnemu klasičnemu pipeline-u.
-    _print_pair_significance(all_results, "Transformer", "Zgodovinski-LW",  method, W)
-    _print_pair_significance(all_results, "Transformer", "Transformer-LWΣ", method, W)
-    _print_pair_significance(all_results, "Transformer", "SimpleML",        method, W)
-    _print_pair_significance(all_results, "Transformer", "BlackLitterman",  method, W)
-    _print_pair_significance(all_results, "Transformer", "LSTM",            method, W)
-    _print_pair_significance(all_results, "Ansambel",    "Zgodovinski-LW",  method, W)
+    bases = ["Zgodovinski", "SimpleML", "BlackLitterman", "LSTM"]
+    # Glavni transformerski pipeline(i), ki so v tem zagonu prisotni: TACTiS in/ali
+    # MASTER. Za vsakega naredimo parne teste proti baseline-om (manjkajoči par se
+    # samodejno preskoči). Tako deluje tudi zagon SAMO z MASTER (brez TACTiS).
+    for head in ["TACTiS", "MASTER", "TFT"]:
+        if head not in all_results:
+            continue
+        for b in bases:
+            _print_pair_significance(all_results, head, b, method, W)
     print()
 
 
@@ -729,3 +716,64 @@ def export_csv(all_results, baseline_results, all_results_weights,
         p = os.path.join(RESULTS_DIR, f"turnover_costs_{period_tag}.csv")
         pd.DataFrame(tc_rows).to_csv(p, index=False, float_format="%.6f")
         print(f"    turnover_costs:{p}")
+
+
+def print_efficiency_ranking(ar, timing, period_tag=""):
+    """Rank model+optimizer combinations by Sharpe/second (price-to-performance).
+    ar: all_results dict (keyed by (scenario, algo))
+    timing: timing dict with train_* and optimizer_* entries
+    """
+    print(f"\n{'='*90}")
+    print(f"  UČINKOVITOST: SHARPE / ČASE (training + walk-forward optimization)")
+    print(f"{'='*90}")
+
+    efficiency = []
+    for (scen, algo), daily_rets_list in ar.items():
+        # Compute PSO Sharpe for this scenario+algo
+        d_rets = np.concatenate(daily_rets_list)
+        if len(d_rets) < 5:
+            continue
+        ann_ret = np.mean(d_rets) * 252
+        ann_vol = np.std(d_rets) * np.sqrt(252)
+        sharpe = ann_ret / (ann_vol + 1e-12)
+
+        # Training time: look for the model in this scenario name
+        train_time = 0.0
+        if "MASTER" in scen:
+            train_time = timing.get("train_master", 0)
+        elif "TFT" in scen:
+            train_time = timing.get("train_tft", 0)
+        elif "TACTiS" in scen:
+            train_time = timing.get("train_tactis", 0)
+        elif "SimpleML" in scen:
+            train_time = timing.get("train_simpleml", 0)
+        elif "LSTM" in scen:
+            train_time = timing.get("train_lstm", 0)
+
+        # Optimizer time (walk-forward total is dominated by walk-forward + optimization)
+        opt_key = f"{scen}_{algo}"
+        opt_time = timing.get("optimizer_times", {}).get(opt_key, 0)
+        total_time = train_time + opt_time
+
+        if total_time > 0.1:
+            efficiency_ratio = sharpe / total_time
+            efficiency.append({
+                "scenario": scen,
+                "algo": algo,
+                "sharpe": sharpe,
+                "train_s": train_time,
+                "opt_s": opt_time,
+                "total_s": total_time,
+                "sharpe_per_sec": efficiency_ratio,
+            })
+
+    # Sort by efficiency descending
+    efficiency.sort(key=lambda x: x["sharpe_per_sec"], reverse=True)
+
+    # Print top 15
+    print(f"{'Rank':<5} {'Scenario':<15} {'Algo':<5} {'Sharpe':>8} {'Time(s)':>8} {'Sharpe/s':>10}")
+    print(f"{'-'*60}")
+    for rank, row in enumerate(efficiency[:15], 1):
+        print(f"{rank:<5} {row['scenario']:<15} {row['algo']:<5} "
+              f"{row['sharpe']:>8.3f} {row['total_s']:>8.1f} {row['sharpe_per_sec']:>10.4f}")
+    print(f"{'='*90}\n")

@@ -1,0 +1,147 @@
+%================================================================
+% Poglavje 2: Teoretično ozadje in osnovni pojmi
+%================================================================
+\chapter{Pregled področja}
+\label{ch:ozadje}
+
+\section{Osnovni pojmi}
+\label{sec:osnovnipojmi}
+
+Obravnavamo trg z~$N$ sredstvi (npr.\ delnicami), ki jih spremljamo v diskretnih časovnih korakih (dnevih)~$t=0,1,\dots,T$. Naj bo~$p_{i,t}>0$ prilagojena zaključna cena sredstva~$i$ ob času~$t$.\\
+
+\noindent\textbf{Enostavni donos} (angl.\ \emph{simple return}) sredstva~$i$ med koraki~$t-1$ in~$t$ je relativna sprememba cene, kot to določa enačba~\eqref{eq:simpleret}:
+\begin{equation}
+\label{eq:simpleret}
+  r_{i,t} = \frac{p_{i,t}-p_{i,t-1}}{p_{i,t-1}} = \frac{p_{i,t}}{p_{i,t-1}}-1.
+\end{equation}
+\textbf{Logaritemski donos} (angl.\ \emph{logarithmic return}) definiramo z enačbo~\eqref{eq:logret}:
+\begin{equation}
+\label{eq:logret}
+  \tilde r_{i,t} = \ln\left(\frac{p_{i,t}}{p_{i,t-1}}\right).
+\end{equation}
+Logaritemski donosi so aditivni skozi čas (vsota dnevnih log-donosov je log-donos celotnega obdobja), zato jih uporabljamo pri gradnji značilk in tarč napovednega modela; enostavni donosi pa so aditivni čez presek (donos portfelja je utežena vsota donosov sredstev), zato jih uporabljamo pri vrednotenju portfeljev.\\
+
+\noindent\textbf{Portfelj} (angl.\ \emph{portfolio}) je vektor uteži~$\vec{w}=(w_1,\dots,w_N)^{\!\top}$, kjer~$w_i$ pomeni delež celotnega premoženja, vloženega v sredstvo~$i$. Uteži morajo biti v celoti razporejene, torej~$\sum_{i=1}^N w_i = 1$.\\
+
+Donose vseh~$N$ sredstev v koraku~$t$ zberemo v \textbf{vektor donosov}~$\vec{r}_t=(r_{1,t},\dots,r_{N,t})^{\!\top}$. \noindent\textbf{Donos portfelja} (angl.\ \emph{portfolio return}) v koraku~$t$ je utežena vsota donosov posameznih sredstev, kot jo podaja enačba~\eqref{eq:portret}:
+\begin{equation}
+\label{eq:portret}
+  r^{\text{p}}_t = \sum_{i=1}^N w_i\, r_{i,t} = \vec{w}^{\!\top}\vec{r}_t .
+\end{equation}\\
+
+Lastnosti sredstev povzemata dva \textbf{momenta donosov} (angl.\ \emph{moments of returns}): vektor pričakovanih donosov (prvi moment) in kovariančna matrika (drugi moment).\\
+
+\noindent\textbf{Vektor pričakovanih donosov}~$\vec{\mu} \in \mathbb{R}^N$ zbira pričakovane donose sredstev; definiran je kot pričakovana vrednost (matematično upanje~$\mathbb{E}[\cdot]$) naključnega vektorja donosov~$\vec{r}$, kot podaja enačba~\eqref{eq:mu}:
+\begin{equation}
+\label{eq:mu}
+  \vec{\mu} = \mathbb{E}[\vec{r}].
+\end{equation}
+
+\noindent\textbf{Kovariančna matrika}~$\vec{\Sigma} \in \mathbb{R}^{N\times N}$ opisuje razpršenost in medsebojne kovariance donosov, kot jo podaja enačba~\eqref{eq:sigma}:
+\begin{equation}
+\label{eq:sigma}
+  \vec{\Sigma} = \mathbb{E}\left[(\vec{r}-\vec{\mu})(\vec{r}-\vec{\mu})^{\!\top}\right].
+\end{equation}
+Diagonalni element~$\Sigma_{ii}$ je varianca sredstva~$i$, izvendiagonalni~$\Sigma_{ij}$ pa kovarianca med sredstvoma~$i$ in~$j$. Ker prava~$\vec{\mu}$ in~$\vec{\Sigma}$ nista znana, ju ocenimo iz podatkov; najpreprostejša ocena je vzorčna (vzorčno povprečje za~$\vec{\mu}$ in vzorčna kovarianca za~$\vec{\Sigma}$ iz okna preteklih donosov).\\
+
+\noindent Iz obeh momentov izpeljemo lastnosti portfelja.\\
+
+\noindent\textbf{Pričakovani donos portfelja}~$\mu_{\text{p}}$ je utežena vsota pričakovanih donosov sredstev, kot jo podaja enačba~\eqref{eq:portmu}:
+\begin{equation}
+\label{eq:portmu}
+  \mu_{\text{p}} = \vec{\mu}^{\!\top}\vec{w}.
+\end{equation}
+
+\noindent\textbf{Varianca portfelja}~$\sigma_{\text{p}}^2$ služi kot mera tveganja in jo podaja enačba~\eqref{eq:portsigma}:
+\begin{equation}
+\label{eq:portsigma}
+  \sigma_{\text{p}}^2 = \vec{w}^{\!\top}\vec{\Sigma}\vec{w}.
+\end{equation}
+
+\newpage
+\section{Mere uspešnosti in tveganja}
+\label{sec:metrics}
+
+Portfelje ovrednotimo z merami, ki upoštevajo tako dosežen donos kot s tem povezano tveganje, saj primerjava golih donosov ne odraža realne uspešnosti upravljanja. Naj bo~$\{r^{\text{p}}_t\}_{t=1}^{T}$ zaporedje realiziranih donosov portfelja, $\bar r$ njihovo povprečje in~$s$ standardni odklon.\\
+
+\noindent\textbf{Sharpov količnik} (SK; angl.\ \emph{Sharpe ratio})~\cite{sharpe1994} je razmerje med povprečnim donosom~$\bar r$ in njegovim standardnim odklonom~$s$, kot to določa enačba~\eqref{eq:sharpe}; breztvegano obrestno mero pri tem zanemarimo (postavimo na~$0$), zato v števcu nastopa kar povprečni donos. Običajno ga anualiziramo z množenjem s~$\sqrt{252}$ (število trgovalnih dni v letu). Velja za osrednjo in najbolj uveljavljeno mero uspešnosti v finančni teoriji in praksi~\cite{demiguel2009}, saj celovito kvantificira donos na enoto tveganja, vendar predpostavlja simetrično porazdelitev donosov.
+\begin{equation}
+\label{eq:sharpe}
+  \mathrm{SK} = \frac{\bar r}{s},
+\end{equation}\\
+
+\noindent\textbf{Sortinov količnik} (angl.\ \emph{Sortino ratio})~\cite{sortino1994} predstavlja izpeljavo Sharpovega količnika, ki pa v imenovalcu namesto celotnega standardnega odklona upošteva le \emph{negativno} volatilnost oziroma standardni odklon pod izbranim ciljnim donosom (t.\,i.\ spodnjo deviacijo~$s^-$), kar podaja enačba~\eqref{eq:sortino}. S tem naslavlja pomanjkljivost Sharpa, saj vlagatelje utemeljično skrbijo le nezaželene izgube, medtem ko so pozitivna nihanja (nadpovprečni donosi) zaželena in niso kaznovana.
+\begin{equation}
+\label{eq:sortino}
+  \mathrm{Sortino} = \frac{\bar r}{s^-},
+\end{equation}\\
+
+\noindent\textbf{Omega razmerje} (angl.\ \emph{Omega ratio})~\cite{keating2002} presega omejitve prejšnjih dveh kazalnikov, saj ne predpostavlja določene oblike porazdelitve donosov, temveč upošteva celotno empirično porazdelitev. Definirano je z enačbo~\eqref{eq:omega} kot razmerje med uteženimi vsotami donosov nad in pod izbranim pragom~$\tau$ (običajno~$\tau=0$ ali breztvegana obrestna mera). Vlagatelju celovito in brez izgube informacij o višjih momentih porazdelitve (npr.\ asimetriji in sploščenosti) prikaže razmerje med verjetnostjo dobičkov in izgub.
+\begin{equation}
+\label{eq:omega}
+  \Omega = \frac{\sum_t \max(r^{\text{p}}_t-\tau,0)}{\sum_t \max(\tau-r^{\text{p}}_t,0)},
+\end{equation}\\
+
+\noindent\textbf{Največji upad} (NU; angl.\ \emph{maximum drawdown}) meri največji relativni padec vrednosti premoženja od dotedanjega vrha do najnižje točke prednovega okrevanja. Če je~$W_t = \prod_{s\le t}(1+r^{\text{p}}_s)$ kumulativna krivulja premoženja, ga izračunamo po enačbi~\eqref{eq:mdd}. Za razliko od volatilnosti, ki meri nihanje okoli povprečja, največji upad neposredno kvantificira najhujšo zgodovinsko izgubo kapitala. Je ključen pokazatelj tveganja v kriznih in tržno nestanovitnih obdobjih, ki vlagateljem in upraviteljem pove, kolikšno največje breme oziroma psihološki in finančni preizkus vzdržljivosti je portfelj že utrpel.
+\begin{equation}
+\label{eq:mdd}
+  \mathrm{NU} = \max_t \left(\frac{\max_{s\le t} W_s - W_t}{\max_{s\le t} W_s}\right),
+\end{equation}\\
+
+\newpage
+
+\section{Markowitzeva optimizacija portfelja}
+\label{sec:markowitz}
+Da bi razumeli, kako iz opisanih momentov donosov sestavimo optimalen portfelj, si oglejmo temeljni model sodobne teorije portfelja, ki ga je vpeljal Markowitz~\cite{markowitz1952}. Ta optimalni portfelj opredeli kot kompromis med pričakovanim donosom in tveganjem, izraženim z varianco.\\
+
+\noindent\textbf{Učinkovit portfelj} (angl.\ \emph{efficient portfolio}) je tisti, ki ob dani stopnji tveganja dosega najvišji možni pričakovani donos oziroma ob danem pričakovanem donosu minimalno tveganje. Vse možne kombinacije takih optimalnih portfeljev v ravnini tveganje--donos tvorijo \emph{učinkovito fronto} (angl.\ \emph{efficient frontier}), ki vlagatelju ponuja optimalen nabor izbire glede na njegov osebni profil tveganja.\\
+
+\noindent\textbf{Optimizacija povprečja in variance} (angl.\ \emph{mean-variance optimization}) ciljni portfelj poišče z reševanjem optimizacijskega problema. Med več možnimi pristopi v tem delu uporabljamo \emph{utežni} pristop: vpeljemo parameter nagnjenosti k tveganju~$P\in[0,1]$ in maksimiziramo skalarizirani ciljni kriterij, kot ga določa enačba~\eqref{eq:mvobj}:
+\begin{equation}
+\label{eq:mvobj}
+  f(\vec{w}) = P\,\vec{\mu}^{\!\top}\vec{w} - (1-P)\,\vec{w}^{\!\top}\vec{\Sigma}\vec{w}, \qquad \text{p.p.}\quad \textstyle\sum_i w_i = 1.
+\end{equation}
+Vpliv parametra~$P$ je neposreden: ko~$P$ teži proti~$1$, optimizator zasleduje izključno maksimizacijo donosa, medtem ko pri~$P$ blizu~$0$ popolnoma dominira minimizacija variance (tveganja). Z zveznim spreminjanjem vrednosti parametra~$P$ prek celotnega intervala uspešno trasiramo celotno učinkovito fronto.\\
+
+Brez dodatnih restrikcij je optimizacijski problem iz enačbe~\eqref{eq:mvobj} klasičen konveksen kvadratni program, ki ima znano in enostavno izračunljivo zaprto rešitev. V realnem okolju pa to teoretično ugodno lastnost resno pokvarita dve ključni težavi. Prva je nezanesljiva ocena pričakovanih donosov~$\vec{\mu}$ --- ker optimizacijski algoritmi morebitne napake v vhodnih cenitvah močno ojačajo, prihaja do ekstremnih in nerealnih uteži --- fenomen, ki ga je Michaud~\cite{michaud1989} slikovito poimenoval »stroj za maksimizacijo napak«, DeMiguel in sod.~\cite{demiguel2009} pa pokažejo, da lahko zaradi njega optimiziran portfelj zaostane celo za naivno enakomerno razporeditvijo~$1/N$. Druga težava izhaja iz praktičnih zahtev po vpeljavi realističnih kardinalnih omejitev, ki jih podrobneje obravnavamo v Razdelku~\ref{sec:ccmv}.\\
+
+\newpage
+
+\section{Kardinalno omejeni problem}
+\label{sec:ccmv}
+
+Da bi razumeli, zakaj osnovni Markowitzev model v praksi pogosto ne zadošča, si oglejmo omejitve, ki jih narekuje dejansko trgovanje. Investitorji ne želijo portfelja, razpršenega po stotinah drobnih pozicij: transakcijski stroški, stroški spremljanja in likvidnostne omejitve narekujejo, da portfelj vsebuje le omejeno število sredstev. To formaliziramo s \emph{kardinalno omejitvijo}.\\
+
+\noindent\textbf{Kardinalno omejeni mean-variance problem} (KOMV; angl.\ \emph{cardinality-constrained mean-variance}) osnovni Markowitzev problem razširi z binarnimi \emph{indikatorskimi} spremenljivkami~$z_i\in\{0,1\}$, kjer~$z_i=1$ pomeni, da je sredstvo~$i$ v portfelju. Zapišemo ga kot optimizacijski problem~\eqref{eq:ccmv}--\eqref{eq:c-box}:
+\begin{align}
+  \max_{\vec{w},\vec{z}} \quad & P\,\vec{\mu}^{\!\top}\vec{w} - (1-P)\,\vec{w}^{\!\top}\vec{\Sigma}\vec{w} \label{eq:ccmv}\\
+  \text{p.p.} \quad & \textstyle\sum_{i=1}^N w_i = 1, \label{eq:c-sum}\\
+  & \textstyle\sum_{i=1}^N z_i \le K, \label{eq:c-card}\\
+  & \varepsilon_i\, z_i \le w_i \le \delta_i\, z_i, \qquad z_i\in\{0,1\},\ i=1,\dots,N. \label{eq:c-box}
+\end{align}
+
+\noindent Ciljna funkcija~\eqref{eq:ccmv} je ista kriterijska funkcija povprečja in variance kot v enačbi~\eqref{eq:mvobj}, le da zdaj optimiziramo hkrati po zveznih utežeh~$\vec{w}$ in binarnih izbirah~$\vec{z}$.\\
+
+\noindent\textbf{Pomen omejitev.} Omejitev~\eqref{eq:c-sum} zahteva popolno razporeditev premoženja. \emph{Kardinalna} omejitev~\eqref{eq:c-card} dovoljuje največ~$K$ izbranih sredstev. Ključna je omejitev~\eqref{eq:c-box}: za neizbrano sredstvo ($z_i=0$) izsili~$w_i=0$, za izbrano ($z_i=1$) pa utrdi utež v \emph{intervalu}~$[\varepsilon_i,\delta_i]$, kjer je~$\varepsilon_i>0$ najmanjši smiselni delež (prepreči zanemarljive pozicije), $\delta_i$ pa zgornja meja (prepreči prekomerno koncentracijo). S tem povežemo zvezne uteži~$\vec{w}$ in binarne izbire~$\vec{z}$.
+
+\noindent\textbf{Računska zahtevnost.} Zaradi binarnih spremenljivk je KOMV \emph{mešano celoštevilski kvadratni program}, ki je NP-težek~\cite{chang2000}: število možnih naborov~$K$ sredstev je~$\binom{N}{K}$ in za realistične~$N$ (deset ali sto sredstev) preveliko za izčrpno preiskovanje. Klasične kvadratne metode zvezne relaksacije ne dajo celoštevilske rešitve, zato problem rešujemo z \emph{metahevristikami} (Poglavje~\ref{ch:algoritmi}), ki so zanj uveljavljen pristop~\cite{chang2000,cramaschyns2003,cura2009,woodside2011} in v sprejemljivem času najdejo dobre (a ne nujno optimalne) rešitve. Chang in sod.~\cite{chang2000} so za KOMV vpeljali standardne testne primere (knjižnica OR-Library~\cite{beasley1990}) in metriko kakovosti, ki je še danes referenca.
+
+\newpage
+\section{Obravnavani problem}
+\label{sec:nasproblem}
+
+Zdaj lahko natančno opredelimo problem, ki ga obravnava to delo. Na realnih borznih podatkih želimo v vsakem trenutku sestaviti portfelj, ki maksimira mean-variance kriterij ob kardinalni omejitvi. Ker pravih momentov donosov ne poznamo, ju moramo oceniti iz zgodovine cen, dostopne do trenutka odločitve.\\
+
+\noindent Formalno iščemo optimalne uteži~$\vec{w}^{\star}$, ki rešujejo optimizacijski problem~\eqref{eq:problem}:
+\begin{equation}
+\label{eq:problem}
+  \vec{w}^{\star} = \operatorname*{arg\,max}_{\vec{w},\,\vec{z}} \; P\,\hat{\vec{\mu}}^{\!\top}\vec{w} - (1-P)\,\vec{w}^{\!\top}\hat{\vec{\Sigma}}\,\vec{w},
+\end{equation}
+ob omejitvah~\eqref{eq:c-sum}--\eqref{eq:c-box}, kjer sta~$\hat{\vec{\mu}}$ in~$\hat{\vec{\Sigma}}$ oceni pravih momentov~$\vec{\mu}$ in~$\vec{\Sigma}$, pridobljeni izključno iz podatkov do trenutka odločitve.\\
+
+\noindent Problem tako združuje dva ločena vira težavnosti, ki ju v nadaljevanju naslavljamo posebej:
+\begin{itemize}
+  \item \emph{ocena momentov donosov}~$\hat{\vec{\mu}}$ in~$\hat{\vec{\Sigma}}$ iz razpoložljive zgodovine cen; kot smo videli, je od kakovosti teh ocen kritično odvisna uspešnost celotnega portfelja. Ta problem v Poglavju~\ref{ch:model} rešujemo z napovednim modelom tipa transformer.
+  \item \emph{kombinatorična optimizacija} kardinalno omejenega problema~\eqref{eq:problem}, ki je NP-težka; to v Poglavju~\ref{ch:algoritmi} rešujemo z metahevristikami.
+\end{itemize}
+Uspešnost tako sestavljenih portfeljev nato ovrednotimo z merami, opisanimi v Razdelku~\ref{sec:metrics}.

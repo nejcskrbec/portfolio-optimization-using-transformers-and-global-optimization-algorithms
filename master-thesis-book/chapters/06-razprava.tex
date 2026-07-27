@@ -1,0 +1,30 @@
+%================================================================
+% Poglavje 6: Razprava
+%================================================================
+\chapter{Razprava}
+\label{ch:razprava}
+
+Rezultati podpirajo osrednjo trditev, a jo je treba brati z ustrezno mero previdnosti. V tem poglavju rezultate umestimo, izpostavimo omejitve in ovrednotimo grožnje veljavnosti sklepov.
+
+\section{Interpretacija}
+\label{sec:interpretacija}
+
+Transformerski cevovod ima največjo prednost prav v režimih, kjer klasična referenca odpove --- v krizah (2008, 2022) in v razpršenem univerzumu brez tehnoloških velikanov. To je zaželena lastnost: napovedni model najbolj pomaga takrat, ko je obvladovanje tveganja najpomembnejše. Da je prednost \emph{večja} brez velikanov (\emph{divuniverse}), je pomemben protiargument pomisleku, da gre le za statično stavo na peščico velikanov: signal je torej resnična presečna razvrstitvena sposobnost, ne pa artefakt sestave univerzuma.
+
+Da transformer zaostane prav v izrazitem vračanju k sredini (okrevanje po pandemiji), je smiselno: model, naučen pretežno na trendnih obdobjih, v obratu (kjer nedavni poraženci postanejo zmagovalci) sledi napačni smeri. Ker tega z več literaturno podprtimi posegi nismo mogli odpraviti (razdelek~\ref{sec:pot}), je to lastnost signala. Prav zato je ansambel zasnovan kot plast robustnosti: v tem režimu ne zmaga, a se s postopkom Hedge nasloni na zmagovalnega zgodovinskega eksperta in ne sledi transformerju navzdol.
+
+\section{Omejitve}
+\label{sec:omejitve}
+
+\paragraph{Mejna prednost pred zgodovino.} Najpomembnejša omejitev je, da je prednost pred golim zgodovinskim povprečjem statistično le mejna ($p\approx 0{,}07$). Na dobro-močnem preizkusu po oknih je značilna, na najbolj konservativnem (po režimu grupiranem) pa ne. To pošteno predstavljamo kot mejno in ne kot dokazano; prednost pred \emph{strojnimi in klasičnimi napovednimi modeli} (LSTM, gradientni gozd, Black-Litterman) pa je trdnejša in prestane vse popravke za mnogotere teze.
+
+\paragraph{Variabilnost zaradi ponovnega učenja.} Napovedni model je občutljiv na naključno inicializacijo; posamezni režimski rezultati se med ponovitvami nekoliko spreminjajo (zlasti tam, kjer so Sharpovi količniki blizu). Zato se pri sklepanju opremo na \emph{združene} rezultate čez režime, ki so bistveno stabilnejši od posameznega režima, in poročamo mejne rezultate kot mejne.
+
+\paragraph{Obseg univerzuma in trga.} Vrednotenje je omejeno na ameriške delnice velike kapitalizacije. Čeprav neposredni primerjavi (S\&P~100 in S\&P~500) razširita zunanjo veljavnost, ostaja odprto vprašanje prenosljivosti na druge trge, razrede sredstev in daljša obdobja.
+
+\paragraph{Model transakcijskih stroškov.} Uporabimo preprost model~$10$~bazičnih točk na enoto obrata. Boljša uspešnost transformerja pride po ceni višjega obrata (napovedi se vsako okno posodobijo); neto Sharpov količnik po stroških ostane najvišji, a bolj natančen model stroškov (nelinearni vpliv, likvidnost) bi robustnost sklepa še utrdil.
+
+\section{Grožnje veljavnosti}
+\label{sec:grozbe}
+
+\emph{Notranja veljavnost.} Ključna grožnja je vpogled v prihodnost (angl.\ \emph{look-ahead}); naslovimo jo s strogo razmejitvijo učnih in testnih obdobij, prečiščenjem tarč in kavzalnim ansamblom. Odkrito napako v enem režimu smo odpravili (razdelek~\ref{sec:pot}). \emph{Zunanja veljavnost.} Da se izognemo tveganju, da je protokol ``prirejen'', poleg šestih režimov izvedemo dve neposredni primerjavi na protokolu objavljenih študij. \emph{Statistična veljavnost.} Zaradi majhne moči posameznega režima združujemo okna in uporabimo vrsto robustnih testov, vključno z na izbiro popravljenim Sharpovim količnikom, ki upošteva, da smo preizkusili več različic strategij. \emph{Optimizacijska veljavnost.} Kakovost optimizatorjev neodvisno preverimo na OR-Library, kjer se vse tri metahevristike približajo objavljeni fronti na okoli odstotek; ker se poleg tega v vseh režimih tesno ujemajo med seboj, izbira med njimi ne spremeni sklepov.

@@ -1,5 +1,5 @@
 {
-  "_comment": "Direct comparison to Sant'Anna, Righi, Muller & Guedes (2022, IREF 80:361) \u2014 cardinality-constrained long-only, S&P 500, rolling 250-day in-sample, rebalance every 120 days, 0.5% costs, 2007-2019. Their objective is INDEX TRACKING (min tracking error) with K=50/100 \u2014 a passive objective, so our active return-seeking pipeline is a different-objective comparison on the same universe/protocol (do we beat passive tracking + the index?). NB: N~400-500 after data filter \u2192 heavy solver/transformer; near_exact disabled.",
+  "_comment": "Direct comparison to Sant'Anna, Righi, Muller & Guedes (2022, IREF 80:361) \u2014 cardinality-constrained long-only, S&P 500, rolling 250-day in-sample, rebalance every 120 days, 0.5% costs, 2007-2019. Their objective is INDEX TRACKING (min tracking error) with K=50/100 \u2014 a passive objective, so our active return-seeking pipeline is a different-objective comparison on the same universe/protocol (do we beat passive tracking + the index?). NB: N~400-500 after data filter \u2192 heavy solver/transformer.",
   "tickers": [
     "A",
     "AAPL",
@@ -534,12 +534,6 @@
     "estimation_window_days": 250,
     "stat_test": "wilcoxon",
     "market_ticker": "SPY"
-  },
-  "near_exact": {
-    "enabled": false,
-    "enumerate_max": 200000,
-    "restarts": 8,
-    "time_limit_sec": 15.0
   },
   "portfolio": {
     "cardinality_K": 50,

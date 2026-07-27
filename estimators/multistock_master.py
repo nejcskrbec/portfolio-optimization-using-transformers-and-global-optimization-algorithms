@@ -47,6 +47,7 @@ Model: 2 značilki (return + log-volumen) — PROVEN konfiguracija (dodatne
 GKX-značilke izkazale regime-toksičnost v mean-rev oknu; glej memory /
 experiments/signal_master.py). 3-seed ansambel.
 """
+import math
 import warnings
 import numpy as np
 import pandas as pd
@@ -106,14 +107,19 @@ class MasterLite(nn.Module):
         self.n_factors = n_factors
         self.in_proj = nn.Linear(n_feat, d_model)
         self.gate = nn.Linear(n_mkt, d_model)
-        self.pos = nn.Parameter(torch.zeros(1, seq_len, d_model))
+        pe = torch.zeros(seq_len, d_model)
+        _pos = torch.arange(seq_len).unsqueeze(1).float()
+        _div = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(_pos * _div)
+        pe[:, 1::2] = torch.cos(_pos * _div)
+        self.register_buffer("pos", pe.unsqueeze(0))   # fiksno sinusno kodiranje (MASTER)
         tenc = nn.TransformerEncoderLayer(d_model, heads, 4 * d_model, DROPOUT,
                                           batch_first=True, norm_first=True)
         self.temporal = nn.TransformerEncoder(tenc, 1)
         xenc = nn.TransformerEncoderLayer(d_model, heads, 4 * d_model, DROPOUT,
                                           batch_first=True, norm_first=True)
         self.inter = nn.TransformerEncoder(xenc, 1)
-        self.tagg = nn.Linear(d_model, 1)
+        self.tagg = nn.Linear(d_model, d_model, bias=False)  # W_lambda (poizvedbena casovna pozornost)
         self.head = nn.Sequential(nn.LayerNorm(d_model), nn.Linear(d_model, 1))
         # shared-representation covariance head
         # Isti per-delnica embedding z → faktorske uteži β (nizko-rangni faktorji)
@@ -136,9 +142,10 @@ class MasterLite(nn.Module):
         h = h.reshape(B * N, self.n_chunks, CHUNK, d).mean(dim=2)
         h = h.reshape(B, N, self.n_chunks, d).permute(0, 2, 1, 3).reshape(B * self.n_chunks, N, d)
         h = self.inter(h)
-        h = h.reshape(B, self.n_chunks, N, d).permute(0, 2, 1, 3)
-        aw = torch.softmax(self.tagg(h).squeeze(-1), dim=-1)
-        return (h * aw.unsqueeze(-1)).sum(dim=2)              # z: (B,N,d)
+        h = h.reshape(B, self.n_chunks, N, d).permute(0, 2, 1, 3)   # (B,N,C,d)
+        q = self.tagg(h[:, :, -1:, :])                              # W_lambda z_tau (zadnji odsek = poizvedba)
+        aw = torch.softmax((h * q).sum(-1), dim=-1)                 # poizvedbena casovna pozornost (MASTER)
+        return (h * aw.unsqueeze(-1)).sum(dim=2)                    # z: (B,N,d)
 
     def score(self, z):
         return self.head(z).squeeze(-1)

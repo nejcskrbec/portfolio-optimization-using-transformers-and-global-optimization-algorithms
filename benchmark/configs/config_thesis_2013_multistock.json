@@ -76,16 +76,40 @@
   "evaluation": {
     "transaction_cost_bps": 10.0,
     "stat_test": "wilcoxon",
-    "market_ticker": "SPY"
-  },
-  "near_exact": {
-    "enabled": true,
-    "enumerate_max": 200000,
-    "restarts": 8,
-    "time_limit_sec": 15.0
+    "market_ticker": "SPY",
+    "tactis": {
+      "enabled": true,
+      "device": "cpu",
+      "hist_length": 45,
+      "epochs_stage1": 12,
+      "epochs_stage2": 25,
+      "batches_per_epoch": 20,
+      "batch_size": 32,
+      "num_samples": 400,
+      "seed": 42
+    },
+    "strong_baselines": {
+      "enabled": true
+    },
+    "master": {
+      "enabled": true,
+      "epochs": 15,
+      "beta": 5.0,
+      "seed": 0
+    },
+    "tft": {
+      "enabled": true,
+      "seq_len": 45,
+      "epochs": 8,
+      "seed": 0
+    },
+    "hedge": {
+      "enabled": true,
+      "volatility_adaptive": true
+    }
   },
   "portfolio": {
-    "_comment": "Problemske omejitve portfelja (definicija problema, ne solverja). Solver hiperparametri (metahevristike, populacija, generacije, seed) živijo v portfolio_optimizers/config.json in se ob zagonu zlijejo v optimizer_config.",
+    "_comment": "Problemske omejitve portfelja (definicija problema, ne solverja). Solver hiperparametri (metahevristike, populacija, generacije, seed) \u017eivijo v portfolio_optimizers/config.json in se ob zagonu zlijejo v optimizer_config.",
     "cardinality_K": 10,
     "w_min": 0.02,
     "w_max": 0.3,

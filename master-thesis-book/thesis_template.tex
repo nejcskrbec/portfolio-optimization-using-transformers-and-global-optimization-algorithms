@@ -1,0 +1,122 @@
+%================================================================
+% SLO
+%----------------------------------------------------------------
+% datoteka: 	thesis_template.tex
+%
+% opis: 		predloga za pisanje diplomskega dela v formatu LaTeX na
+% 				Univerza v Ljubljani, Fakulteti za računalništvo in informatiko
+%
+% pripravili: 	Matej Kristan, Zoran Bosnić, Andrej Čopar,
+%			  	po začetni predlogi Gašperja Fijavža
+%
+% popravil: 	Domen Rački, Jaka Cikač, Matej Kristan
+%
+% verzija: 		30. september 2016 (dodan razširjeni povzetek)
+%================================================================
+
+
+%================================================================
+% SLO: definiraj strukturo dokumenta
+% ENG: define file structure
+%================================================================
+\documentclass[a4paper, 12pt]{book}
+ 
+
+%================================================================
+% SLO: Odkomentiraj "\SLOtrue " za izbiro slovenskega jezika
+% ENG: Uncomment "\SLOfalse" to chose English languagge
+%================================================================
+\newif\ifSLO
+\newif\ifTRACKEXIST
+\newif\ifTRACKCS
+\newif\ifPROGRAMMM
+\newif\ifPROGRAMEMAI
+
+
+% ---------------------------------------------------------------------------------------
+% IMPORTANT: Adjust the thesis language, your study program and track within this block
+% ---------------------------------------------------------------------------------------
+% ** switch language ** %
+\SLOtrue % Enables Slovenian language
+%\SLOfalse  % Enables English language
+
+% ** Switch programs: ** %
+
+% ** Uncomment if Program: Computer Science, Track: Computer Science **%
+\TRACKCStrue
+\TRACKEXISTtrue
+
+% ** Uncomment if Program: Computer Science, Track: Data Science **%
+%\TRACKCSfalse
+%\TRACKEXISTtrue
+
+% ** Uncomment if Program: Multimedia **%
+%\PROGRAMMMtrue 
+%\TRACKEXISTfalse 
+
+% ** Uncomment if Program: EMAI **%
+%\PROGRAMEMAItrue
+%\SLOfalse 
+
+% -------------------------------------------------------------------------------------------
+% End of language, program and track adjustment
+% -------------------------------------------------------------------------------------------
+
+
+%================================================================
+% SLO: vključi oblikovanje in pakete
+% ENG: include design and packages
+%================================================================
+\input{style/thesis_style}
+
+%----------------------------------------------------------------
+% |||||||||||||||||||||| USTREZNO POPRAVI |||||||||||||||||||||||
+% |||||||||||||||||||||| EDIT ACCORDINGLY |||||||||||||||||||||||
+%----------------------------------------------------------------
+\newcommand{\ttitle}{Optimizacija naložbenih portfeljev z uporabo transformerjev in globalnih optimizacijskih algoritmov}
+\newcommand{\ttitleEn}{Portfolio optimization using transformers and global optimization algorithms}
+\newcommand{\tsubject}{\ttitle}
+\newcommand{\tsubjectEn}{\ttitleEn}
+\newcommand{\tauthor}{Nejc Škrbec}
+\newcommand{\temail}{nejc.skrbec1@gmail.com}
+\newcommand{\myyear}{2026}
+\newcommand{\tkeywords}{optimizacija portfelja, kardinalna omejitev, presečni transformer, metahevristike, strojno učenje, postopno vrednotenje}
+\newcommand{\tkeywordsEn}{portfolio optimization, cardinality constraint, cross-sectional transformer, metaheuristics, machine learning, walk-forward evaluation}
+\newcommand{\mysupervisor}{doc.~dr.\ Ime Priimek} % TODO: vpiši mentorja
+% Uncomment and define the following definition if you have a co-supervisor
+%\newcommand{\mycosupervisor}{akad.~prof.~dr.\ Martin Krpan}
+ 
+
+%%  Code publication under GNU
+% NOTE: If you chose to publish the source code as part of the thesis, then put the url here and change the appropriate switch below !!
+\newcommand{\linktosourcecode}{https://github.com/nejcskrbec/portfolio-optimization-transformers} % TODO: posodobi URL
+\newif\ifCODEPUBLISHED
+
+% Chosing the published code "true" will automatically generate the licence statement for the code on the licence page.
+ \CODEPUBLISHEDtrue % uncomment if the code is published
+% \CODEPUBLISHEDfalse % uncomment if the code is not published
+%% End of Code publication under GNU
+
+% include formatted front pages
+\input{style/thesis_front_pages}
+
+%================================================================
+% ENG: main pages of the thesis
+%================================================================
+
+\input{chapters/01-uvod}
+\input{chapters/02-ozadje}
+\input{chapters/03-napovedni-model}
+\input{chapters/04-optimizacijski-algoritmi}
+\input{chapters/05-eksperimentalno}
+\input{chapters/06-razprava}
+\input{chapters/07-sklep}
+
+%----------------------------------------------------------------
+% SLO: bibliografija
+% ENG: bibliography
+%----------------------------------------------------------------
+\bibliographystyle{elsarticle-num}
+\bibliography{bibliography}
+
+\end{document}

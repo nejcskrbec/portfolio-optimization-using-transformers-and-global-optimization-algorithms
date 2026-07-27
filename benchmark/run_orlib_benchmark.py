@@ -15,7 +15,6 @@ Uporaba:
     python run_orlib_benchmark.py                 # privzeto: port1–3, 25 λ
     python run_orlib_benchmark.py --datasets port1 port2 port3 port4 port5
     python run_orlib_benchmark.py --full          # vse instance, 50 λ
-    python run_orlib_benchmark.py --near-exact     # dodaj near-exact referenco
     python run_orlib_benchmark.py --algos ga sa pso
 
 C++ optimizator mora biti zgrajen:  cd portfolio_optimizers && make
@@ -82,24 +81,6 @@ def trace_frontier(cfg, tickers, algo, mu, cov, lambdas, seed, binary):
     return np.array(pts), t_tot
 
 
-def trace_frontier_near_exact(mu, cov, K, lambdas, seed):
-    """Near-exact (support-search) omejena fronta — najtesnejša dosegljiva."""
-    from benchmark.near_exact import solve_near_exact
-    pts, t_tot = [], 0.0
-    for lam in lambdas:
-        P = float(np.clip(1.0 - lam, 0.0, 1.0))
-        t0 = time.perf_counter()
-        r = solve_near_exact(mu, cov, K, EPS_STD, DELTA_STD, P,
-                             enumerate_max=200000, restarts=6,
-                             time_limit_sec=20.0, seed=seed)
-        t_tot += time.perf_counter() - t0
-        w = r["weights"]
-        if w.sum() < 1e-9:
-            continue
-        pts.append((float(w @ mu), float(w @ cov @ w)))
-    return np.array(pts), t_tot
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--datasets", nargs="+", default=["port1", "port2", "port3"],
@@ -110,8 +91,6 @@ def main():
     ap.add_argument("--pop", type=int, default=100)
     ap.add_argument("--gen", type=int, default=750)
     ap.add_argument("--seed", type=int, default=42)
-    ap.add_argument("--near-exact", action="store_true",
-                    help="Dodaj near-exact omejeno fronto kot referenco.")
     ap.add_argument("--full", action="store_true",
                     help="Vse instance (port1–5) in 50 λ točk.")
     ap.add_argument("--plot", action="store_true", help="Shrani grafe front.")
@@ -160,18 +139,6 @@ def main():
                          "algorithm": algo, **{f"err_{k}": v for k, v in err.items()},
                          "time_sec": round(t_tot, 2)})
             print(f"  {algo:<12} {err['mean']:>8.4f} {err['median']:>8.4f} "
-                  f"{err['min']:>7.4f} {err['max']:>8.4f} {err['std']:>7.4f} "
-                  f"{err['n']:>4d} {t_tot:>8.2f}")
-
-        if args.near_exact:
-            pts, t_tot = trace_frontier_near_exact(mu, cov, K_STD, lambdas, args.seed)
-            err = frontier_error(pts, frontier)
-            all_pts[ds]["near_exact"] = pts
-            rows.append({"dataset": ds, "index": meta["name"], "N": meta["N"],
-                         "algorithm": "near_exact",
-                         **{f"err_{k}": v for k, v in err.items()},
-                         "time_sec": round(t_tot, 2)})
-            print(f"  {'near_exact':<12} {err['mean']:>8.4f} {err['median']:>8.4f} "
                   f"{err['min']:>7.4f} {err['max']:>8.4f} {err['std']:>7.4f} "
                   f"{err['n']:>4d} {t_tot:>8.2f}")
 

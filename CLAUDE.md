@@ -38,7 +38,6 @@ cd portfolio_optimizers && make && cd .. && python benchmark/run_benchmark.py be
 ```bash
 python benchmark/run_orlib_benchmark.py                    # port1–3, 25 λ (quick)
 python benchmark/run_orlib_benchmark.py --full --plot      # all port1–5, 50 λ, frontier plots
-python benchmark/run_orlib_benchmark.py --near-exact       # add near-exact constrained frontier
 ```
 Validates the C++ metaheuristics against the standard Chang et al. (2000)
 OR-Library instances (`benchmark/orlib_data/portN.txt`) by tracing each
@@ -101,7 +100,6 @@ The binary reads both, runs the selected algorithm, and prints results to stdout
 ### Benchmark orchestration (`benchmark/`)
 - `benchmark_core.py`: `run_walkforward()` — the main walk-forward loop. Wires in the `Ansambel` scenario via `HedgeMuEnsemble` (from `estimators/mu_ensemble.py`, enabled by `evaluation.mu_ensemble.enabled`, default on). Also contains `find_binary()` which searches for the compiled `portfolio_optimizer`.
 - `benchmark_report.py`: all presentation logic (merger of the former `benchmark_plots.py` + `benchmark_export.py`, which were both pure output and cross-imported). Matplotlib plots saved to `test_results/` (`plot_combined_walkforward`, `plot_all_algorithms_grid`, `plot_weights_grid`), the console summary table, and per-window CSV export (`export_csv`). `print_scenario_significance` runs paired significance tests (Wilcoxon by default) for three pairs: `Transformer`-vs-`Zgodovinski`, `Ansambel`-vs-`Zgodovinski`, `Ansambel`-vs-`Transformer`.
-- `near_exact.py`: `solve_near_exact()` — near-optimal CCMV reference (support enumeration when `C(N,K)` is small, else warm-started multi-start 1-swap local search) for measuring the metaheuristics' optimality gap.
 - `orlib.py`: loads the OR-Library `portN.txt` instances + published unconstrained frontiers (`portefN.txt`) and computes the Chang et al. (2000) standard percentage-error metric. Driven by `run_orlib_benchmark.py`.
 - `benchmark_strategies.py`: classical benchmark portfolios for the historical walk-forward — `gmv_weights` (Σ-only), `max_sharpe_weights` (Markowitz tangency, no cardinality), `risk_parity_weights` (ERC). Chosen to isolate the hybrid's design choices: GMV/risk-parity ignore μ (do they beat transformer-μ?), Markowitz uses the same μ/Σ without cardinality (cost of the constraint + metaheuristic). Computed per-window inside `run_walkforward` and reported as extra `baseline_results` rows. A passive **market** buy-&-hold (`evaluation.market_ticker`, default `SPY`) is downloaded in `run_benchmark.py` and passed as `market_prices`.
 

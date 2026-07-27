@@ -40,12 +40,6 @@
     "stat_test": "wilcoxon",
     "market_ticker": "SPY"
   },
-  "near_exact": {
-    "enabled": true,
-    "enumerate_max": 200000,
-    "restarts": 8,
-    "time_limit_sec": 15.0
-  },
   "portfolio": {
     "_comment": "Mancilla et al. (2025) problem: K=5 of 10, long-only, box 0.05..0.50, q=0.3 ⇒ P=0.7.",
     "cardinality_K": 5,

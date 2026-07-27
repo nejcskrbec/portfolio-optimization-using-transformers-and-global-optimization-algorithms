@@ -1,0 +1,16 @@
+ %---------------------------------------------------------------
+% SLO: angleški povzetek
+% ENG: english abstract
+%---------------------------------------------------------------
+\selectlanguage{english} % Preklopi na angleški jezik
+\addcontentsline{toc}{chapter}{Abstract}
+\chapter*{Abstract}
+
+\noindent\textbf{Title:} \ttitleEn
+\bigskip
+
+Constructing an investment portfolio is a classical optimization problem, formulated by Markowitz as a trade-off between expected return and risk. In practice two difficulties arise: expected returns are hard to estimate, and the realistic cardinality constraint on the number of held assets turns the problem into a mixed-integer, non-convex task that classical quadratic solvers cannot handle. In this thesis we present and open-source a hybrid pipeline that addresses both difficulties separately. Expected returns and the covariance matrix are estimated by a single cross-sectional transformer of the MASTER type that, from the price history of all assets jointly, predicts their ranking by future return together with a factor covariance from the same shared representation; as an added robustness layer the forecasts are combined online with the historical mean through the Hedge rule. The cardinality-constrained mean-variance problem is then solved by three metaheuristics implemented in C++ (particle swarm optimization, simulated annealing, a genetic algorithm). The optimizers are validated independently on the OR-Library instances, and the full pipeline through walk-forward testing across six market regimes and two direct comparisons on the protocol of published studies. The transformer pipeline outperforms the classical one in five of six regimes, is the only return-forecast source with positive out-of-sample predictive power, and is the only strategy (together with the ensemble) to survive a selection-adjusted (deflated) Sharpe-ratio test; its advantage over the plain historical mean remains economically meaningful but statistically marginal.
+
+\subsection*{Keywords}
+\textit{\tkeywordsEn}
+\clearemptydoublepage

@@ -133,12 +133,6 @@
     "stat_test": "wilcoxon",
     "market_ticker": "OEF"
   },
-  "near_exact": {
-    "enabled": false,
-    "enumerate_max": 200000,
-    "restarts": 8,
-    "time_limit_sec": 15.0
-  },
   "portfolio": {
     "cardinality_K": 20,
     "w_min": 0.01,

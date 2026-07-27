@@ -1,0 +1,362 @@
+%================================================================
+% Poglavje 5: Eksperimentalno vrednotenje
+%================================================================
+\chapter{Eksperimentalno vrednotenje}
+\label{ch:eksperiment}
+
+V tem poglavju povežemo napovedni model (Poglavje~\ref{ch:model}) in optimizacijske algoritme (Poglavje~\ref{ch:algoritmi}) v celoten cevovod ter ga ovrednotimo. Najprej opišemo cevovod, scenarije in postopek vrednotenja skupaj s statistično metodologijo, nato pa predstavimo rezultate: neodvisno preverbo kakovosti optimizatorjev na knjižnici OR-Library, kakovost napovedi, robustnost čez tržne režime, združeni preizkus značilnosti in neposredni primerjavi na tujih protokolih. Sledi podroben pregled po posameznih režimih, poglavje pa sklenemo s pošteno predstavitvijo poti do končne zasnove in opombo o ponovljivosti.
+
+\section{Cevovod, scenariji in referenčne strategije}
+\label{sec:pregled}
+
+Sistem je razdeljen na tri sklope. \emph{Ocenjevalniki} (paket \texttt{estimators}) vsebujejo napovedni model~$\vec{\mu}$/$\vec{\Sigma}$ (presečni transformer iz Poglavja~\ref{ch:model}) in spletni ansambel. \emph{Optimizatorji} (mapa \texttt{portfolio\_optimizers}) so implementirani v C++ (razdelek~\ref{sec:impl-opt}). \emph{Orkestracija} (paket \texttt{benchmark}) izvaja postopno zanko, poganja optimizatorje, računa referenčne strategije in izvozi rezultate ter statistiko. Klasične strategije brez~$\vec{\mu}$ (GMV, paritet tveganja, HPT) in tangentni Markowitz so implementirane ločeno v jeziku Python, saj gre za zaprte oziroma konveksne rešitve, ki jih ni treba prepuščati metahevristikam.
+
+Cevovod v vsakem obdobju iz zgodovine cen izračuna oceni~$\vec{\mu}$ in~$\vec{\Sigma}$ ter ju preda metahevristikam, ki rešijo problem~\eqref{eq:ccmv}. Osrednja primerjava poteka med tremi \emph{scenariji}, od katerih vsak sestavlja svoj celoten cevovod z domorodno oceno kovariance:
+\begin{itemize}
+  \item \textbf{Zgodovinski:}~$\vec{\mu}$ je drseče vzorčno povprečje donosov, $\vec{\Sigma}$ pa vzorčna kovarianca --- povsem klasična referenca.
+  \item \textbf{Transformer:} oba momenta izhajata iz presečnega transformerja (napovedna~$\vec{\mu}$-veja in faktorska~$\vec{\Sigma}$-veja iz iste deljene predstavitve).
+  \item \textbf{Ansambel:} postopek Hedge (Algoritem~\ref{alg:hedge}) spletno kombinira transformerski in zgodovinski~$\vec{\mu}$ v~$\vec{\mu}_{\text{ans}}$, medtem ko transformerjeva~$\vec{\Sigma}$ ansambel obide in gre neposredno v optimizator.
+\end{itemize}
+Ker vsak scenarij uporablja svojo domorodno~$\vec{\Sigma}$, primerjava meri \emph{celotne pristope}, ne le vira~$\vec{\mu}$ v izolaciji. Vsi trije scenariji svoje momente predajo istim metahevristikam. Slika~\ref{fig:cevovod} povzame celoten cevovod.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.86\linewidth]{cevovod_shema}
+  \caption{Shema cevovoda: vsak od treh scenarijev proizvede oceni~$\vec{\mu}$ in~$\vec{\Sigma}$, ki ju iste metahevristike (RD/SO/GA) uporabijo za reševanje kardinalno omejenega mean-variance problema; dobljeni portfelj ovrednotimo postopno (walk-forward).}
+  \label{fig:cevovod}
+\end{figure}
+
+\paragraph{Dinamični parameter tveganja.}\label{sec:dynp}
+Parameter~$P$ v~\eqref{eq:mvobj} prilagajamo tržnemu režimu po logiki Anga in Bekaerta~\cite{ang2004}, ki pokažeta, da investitor, ki ignorira volatilnostne režime, v visoko-volatilnem (medvedjem) obdobju drži preveč tveganih sredstev. Naj bo~$\sigma_{21}$ 21-dnevna realizirana volatilnost trga v danem oknu ter~$\sigma_{\text{lo}}$ in~$\sigma_{\text{hi}}$ spodnji in zgornji prag. Parameter~$P$ zvezno interpoliramo med~$P_0-\Delta$ (visoka volatilnost) in~$P_0+\Delta$ (nizka volatilnost):
+\begin{equation}
+\label{eq:dynp}
+  P(\sigma_{21}) = P_0 - \Delta + 2\Delta\cdot\mathrm{clip}\!\left(\frac{\sigma_{\text{hi}}-\sigma_{21}}{\sigma_{\text{hi}}-\sigma_{\text{lo}}},\,0,\,1\right).
+\end{equation}
+V nizko-volatilnem (bikovskem) režimu ima mean-variance fronta višji Sharpe, zato v~\eqref{eq:dynp} bolj zaupamo napovedi~$\vec{\mu}$ (višji~$P$); v visoko-volatilnem režimu so napovedi manj zanesljive (nižji~$P$).
+
+\paragraph{Primerjalne strategije.}\label{sec:baselines}
+Poleg treh scenarijev vpeljemo vrsto primerjalnih strategij, ki izolirajo posamezne zasnovne odločitve:
+\begin{itemize}
+  \item \textbf{Naivne:} enakomerni portfelj~$1/N$ ter~$1/N$ na~$K$ najboljših po napovedi. DeMiguel in sod.~\cite{demiguel2009} opozarjajo, da je naivni~$1/N$ v končnih vzorcih presenetljivo težko premagati.
+  \item \textbf{Zgolj na~$\vec{\Sigma}$ (brez~$\vec{\mu}$):} globalni minimalno-variančni portfelj (GMV), paritet tveganja in hierarhični paritet tveganja (HPT)~\cite{lopezdeprado2016}. Če jih napovedni scenarij premaga, to potrjuje vrednost napovedi~$\vec{\mu}$.
+  \item \textbf{Brez kardinalnosti:} Markowitzev tangentni portfelj z istim~$\vec{\mu}$ in~$\vec{\Sigma}$, a brez kardinalne omejitve --- izolira ceno omejitve in metahevristike.
+  \item \textbf{Močne napovedne reference} (z Ledoit-Wolf skrčeno~\cite{ledoit2004} kovarianco): gradientni gozd~\cite{ke2017lightgbm} kot preprost strojni~$\vec{\mu}$, Black-Litterman (BL)~\cite{black1992} kot klasičen bayesovski~$\vec{\mu}$ in sekvenčni LSTM~\cite{hochreiter1997lstm} kot alternativna nevronska arhitektura. Te reference so \emph{strožje} od vzorčne, saj sta Ledoit-Wolf skrčenje in strojni~$\vec{\mu}$ močnejša od naivnih.
+  \item \textbf{Pasivna:} tržni indeks (nakup-in-drži) z zanemarljivim obratom.
+\end{itemize}
+
+\paragraph{Podatki in konfiguracija.}\label{sec:config}
+Zgodovinske prilagojene zaključne cene in obseg trgovanja pridobimo prek storitve \texttt{yfinance}. Iz njih izpeljemo vhodne značilke in tarče, kot je opisano v Poglavju~\ref{ch:model} (razdelek o gradnji značilk). Konfiguracija je razdeljena po odgovornosti na dve datoteki, ki se ob zagonu združita: \emph{eksperimentalna} konfiguracija (nabor sredstev, testno obdobje, hiperparametri napovednega modela, definicija problema~$K$/$\varepsilon$/$\delta$/$P$, nastavitve ansambla) in \emph{solverska} konfiguracija (velikost populacije, število generacij, naključno seme in parametri posameznih algoritmov iz Tabele~\ref{tab:hp-solver}). Takšna delitev omogoča, da solverske parametre nastavimo enkrat in jih delimo med vsemi poskusi, medtem ko se eksperimentalna definicija spreminja po režimu. Vsi hiperparametri napovednega modela so zbrani v Tabeli~\ref{tab:hp-model}, hiperparametri optimizatorjev pa v Tabeli~\ref{tab:hp-solver}.
+
+\section{Postopno vrednotenje in statistična značilnost}
+\label{sec:walkforward}
+
+Celoten cevovod ovrednotimo s \emph{postopnim} (walk-forward) testiranjem, ki posnema realno rabo: v vsakem trenutku uporabimo le pretekle podatke.
+
+\paragraph{Postopek.} Napovedni model naučimo na obdobju pred testom. Testno obdobje razdelimo na~$W$ zaporednih, neprekrivajočih (mesečnih) oken. Za vsako okno na \emph{rastoči} zgodovini izračunamo~$\vec{\mu}$ in~$\vec{\Sigma}$, rešimo optimizacijo in dobljeni portfelj ovrednotimo na donosih \emph{naslednjega} okna. Zgodovinske ocene se kotalijo prek istega nedavnega okna, kot ga transformer vidi pri inferenci, kar zagotavlja pošteno primerjavo.
+
+\paragraph{Kavzalnost in razmejitev.} Ključno je, da model \emph{nikoli ne vidi testnih podatkov}. To zagotovimo z: (i)~učnim obdobjem, ki se konča strogo pred prvim testnim oknom; (ii)~\emph{prečiščenjem} (angl.\ \emph{purge}) tarč, tako da nobeno učno okno ne uporablja~$H$-dnevnih donosov, ki še niso realizirani do reza; in (iii)~kavzalnim ansamblom, katerega uteži okna~$t$ uporabljajo le okna~$<t$.
+
+\begin{primer}
+\label{pr:wf}
+Slika~\ref{fig:pr-wf} ponazarja postopek. Model se najprej nauči na učnem obdobju, med njim in testom pa je vstavljena kratka vrzel (purge). Nato se pomikamo po zaporednih testnih oknih: za vsako okno na \emph{rastoči} zgodovini (svetlo sivo) ocenimo~$\vec{\mu}$ in~$\vec{\Sigma}$, rešimo optimizacijo in portfelj ovrednotimo na donosih tega okna. Tako v vsakem trenutku uporabimo le pretekle podatke.
+\end{primer}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.92\linewidth]{primer_walkforward}
+  \caption{Postopno (walk-forward) vrednotenje: učno obdobje, vrzel (purge) in zaporedna testna okna. Za vsako okno se uporabi le zgodovina do njegovega začetka.}
+  \label{fig:pr-wf}
+\end{figure}
+
+\paragraph{Transakcijski stroški.} Donose ovrednotimo \emph{neto} po transakcijskih stroških: ob vsakem rebalansiranju od donosa odštejemo strošek, sorazmeren obratu portfelja (spremembi uteži), po stopnji~$10$~bazičnih točk na enoto obrata. Boljša uspešnost napovednega scenarija pride po ceni višjega obrata; poročamo neto Sharpov količnik, ki ta strošek že upošteva.
+
+\paragraph{Statistična značilnost.}\label{sec:stat}
+Ker ima posamezen režim malo oken in zato malo statistične moči, značilnost ovrednotimo z \emph{združevanjem} oken čez več režimov ($n\approx 254$) in več robustnih testov.
+
+\paragraph{Signalna raven.} Za vsak vir~$\vec{\mu}$ zberemo IK po oknih čez vse režime in preverimo, ali je povprečni IK značilno pozitiven, z Newey-West popravkom~\cite{neweywest1987} za avtokorelacijo ter s po režimu grupirano~$t$-statistiko (vsak režim kot ena grozd-enota).
+
+\paragraph{Portfeljska raven.} Razliko kumulativnega donosa po oknih med transformerjem in vsako referenco testiramo s parnim~$t$-testom in neparametričnim Wilcoxonovim testom~\cite{demiguel2009}. Ker so mesečna neprekrivajoča okna približno neodvisna, je ta test dobro-močen; po režimu grupiran test poročamo kot najbolj konservativen.
+
+\paragraph{Razlika Sharpovih količnikov.} Razliko anualiziranih Sharpovih količnikov na zloženih dnevnih donosih testiramo z metodo Ledoit-Wolf/Memmel~\cite{ledoitwolf2008,memmel2003} (Newey-West HAC) in stacionarnim samovzorčenjem (angl.\ \emph{bootstrap})~\cite{politis1994}.
+
+\paragraph{Popravek na izbiro.} Ker smo preizkusili več različic strategij, uporabimo \emph{na izbiro popravljeni} Sharpov količnik (PSK; angl.\ \emph{deflated Sharpe ratio})~\cite{baileylopez2014}, ki oceni pričakovani največji Sharpe pod ničelno hipotezo čez vse preizkušene strategije in izračuna verjetnost, da je pravi Sharpe pozitiven kljub temu popravku.
+
+\paragraph{Popravek za mnogotere teze.} Vse parne~$p$-vrednosti dodatno popravimo po postopku Benjamini-Hochberg~\cite{benjamini1995}, ki nadzoruje delež lažnih odkritij pri hkratnem preizkušanju več hipotez.
+
+\section{Neodvisno vrednotenje optimizatorjev}
+\label{sec:orlib}
+
+Preden ovrednotimo celoten cevovod, metahevristike neodvisno preverimo na standardnih primerih iz knjižnice OR-Library~\cite{chang2000,beasley1990}. Vsak primer vsebuje priloženo \emph{neomejeno} učinkovito fronto; kakovost hevristike merimo s standardno odstotno napako po Changu in sod.: za vsako točko omejene fronte izračunamo najmanjšo relativno razdaljo do reference. Tabela~\ref{tab:orlib} povzame napako na dveh primerih. Na manjši univerzi (Hang Seng,~$N=31$) se vsi algoritmi približajo objavljeni fronti na okoli en odstotek, kar potrjuje pravilnost implementacije; na večji (DAX~100,~$N=85$) napake pričakovano narastejo. Najbolj robustna sta rojenje delcev in genetski algoritem. Ta preizkus je neodvisen od napovednega dela in preverja izključno kakovost optimizatorjev.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Standardna odstotna napaka fronte glede na objavljeno neomejeno fronto OR-Library, pri~$K=10$ (nižje je bolje).}
+  \label{tab:orlib}
+  \begin{tabular}{lcccc}
+    \toprule
+     & \multicolumn{2}{c}{Hang Seng ($N{=}31$)} & \multicolumn{2}{c}{DAX 100 ($N{=}85$)}\\
+    Algoritem & povpr. & mediana & povpr. & mediana\\
+    \midrule
+    RD         & 1{,}24 & 1{,}34 & 2{,}99 & 2{,}82\\
+    SO          & 2{,}70 & 1{,}56 & 3{,}43 & 2{,}90\\
+    GA          & 1{,}46 & 1{,}51 & 3{,}97 & 3{,}46\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Sliki~\ref{fig:orlib} to skladnost ponazorita še vizualno: kardinalno omejene fronte vseh treh metahevristik ležijo praktično na objavljeni neomejeni fronti OR-Library, kar potrjuje, da je optimalnostna vrzel zanemarljiva.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.49\linewidth]{orlib_frontier_port1}\hfill
+  \includegraphics[width=0.49\linewidth]{orlib_frontier_port2}
+  \caption{Kardinalno omejene fronte metahevristik na primerih Hang Seng (levo) in DAX 100 (desno) proti objavljeni neomejeni fronti OR-Library (siva krivulja). Vsaka točka je rešitev pri eni vrednosti~$\lambda$; RD (zelena), SO (rdeča) in GA (vijolična) se skoraj popolnoma prekrivajo in ležijo tik ob referenčni fronti.}
+  \label{fig:orlib}
+\end{figure}
+
+\section{Napovedna kakovost in robustnost čez režime}
+\label{sec:setup}
+
+Celoten cevovod testiramo na univerzah ameriških delnic velike kapitalizacije, s kardinalnostjo~$K=10$, mejama uteži~$\varepsilon=0{,}02$ in~$\delta=0{,}30$, osnovnim parametrom tveganja~$P=0{,}8$ in transakcijskimi stroški~$10$~bazičnih točk. Da bi ocenili robustnost skozi različne razmere, poskus ponovimo v \emph{šestih tržnih režimih}: dveh krizah (globalna finančna kriza 2007--2010 in pandemija 2019--2021), umirjenem obdobju z vračanjem k sredini (2013--2017), obdobju dvigovanja obrestnih mer (2022--2024) ter dveh različicah obdobja 2019--2022 --- s tehnološkimi velikani (\emph{headline}) in brez njih (\emph{divuniverse}). Skupno čez vse režime dobimo~$n\approx 254$ zaporednih neprekrivajočih oken.
+
+\paragraph{Kakovost napovedi.}\label{sec:ic}
+Osrednji nadzorni pokazatelj je informacijski koeficient (IK). Ko IK združimo čez vse režime, je transformer \emph{edini} vir napovedi z opazno pozitivno zunaj-vzorčno napovedno močjo (povprečni IK~$+0{,}027$; po režimu grupirana~$t$-statistika~$2{,}22$,~$p\approx 0{,}077$), medtem ko so vse reference praktično nič ali negativne: zgodovinsko povprečje~$-0{,}019$, BL~$-0{,}018$, gradientni gozd~$-0{,}004$, LSTM~$+0{,}004$ (neznačilno). Transformer se torej kot signal loči od vseh preizkušenih alternativ.
+
+\paragraph{Robustnost čez režime.}\label{sec:regimes}
+Tabela~\ref{tab:regimes} prikazuje Sharpov količnik po posameznih režimih. Transformerski cevovod prekaša klasično zgodovinsko referenco v \emph{petih od šestih} režimih; edina izjema je okrevanje po pandemiji (COVID 2020), izrazito obdobje vračanja k sredini, kjer drseče zgodovinsko povprečje prednjači. Prednost je največja prav v krizi 2008, kjer klasična referenca izgublja (Sharpe~$0{,}14$), transformer pa doseže~$0{,}73$. Poučen je kontrast med \emph{headline} in \emph{divuniverse}: brez tehnoloških velikanov se prednost transformerja ne zmanjša, temveč \emph{poveča} (Sharpe~$1{,}27$ proti~$0{,}28$), kar ovrže pomislek, da gre le za statično stavo na peščico velikanov. Slika~\ref{fig:regimegrid} to prikaže še vizualno.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Sharpov količnik (algoritem RD, na zloženih dnevnih donosih) po tržnih režimih; zadnji stolpec je predznak združenega IK transformerja. Transformer prekaša zgodovinsko referenco v petih od šestih režimov (izjema COVID).}
+  \label{tab:regimes}
+  \begin{tabular}{lrrrc}
+    \toprule
+    Režim & Transformer & Zgodovinski & LSTM & IK transf.\\
+    \midrule
+    divuniverse (2019--22, brez velikanov) & 1{,}27 & 0{,}28 & 0{,}73 & $+$\\
+    GFC (kriza 2008)                       & 0{,}73 & 0{,}14 & 0{,}13 & $+$\\
+    COVID (kriza 2020)                     & 1{,}06 & 1{,}73 & 1{,}03 & $-$\\
+    2013--2017 (umirjen trg)               & 1{,}96 & 1{,}34 & 0{,}99 & $+$\\
+    2022--2024 (dvig obr.\ mer)            & 1{,}04 & 0{,}47 & 1{,}09 & $+$\\
+    headline (2019--22, z velikani)        & 0{,}43 & 0{,}43 & 0{,}62 & $+$\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Da sliko dopolnimo z absolutnimi donosi, Tabela~\ref{tab:regimescum} prikazuje končni kumulativni donos (neto, algoritem RD) treh scenarijev in dveh naivnih referenc po režimih. Prednost transformerja je izrazita v krizi 2008 (kjer zgodovinski izgublja) in v razpršenem univerzumu \emph{divuniverse} ($+197\,\%$ proti~$+16\,\%$), medtem ko v okrevanju po pandemiji zaostane. Ansambel v vsakem režimu sledi boljšemu ekspertu: kjer transformer zmaga, ga posnema (ali celo prekaša, npr.\ GFC in 2022), kjer pa zaostane (COVID), se nasloni na zgodovinskega ($+229\,\%$ proti transformerjevim~$+125\,\%$).
+
+\begin{table}[htbp]
+  \centering
+  \caption{Končni kumulativni donos (\%) po režimih (algoritem RD, neto po stroških): transformer (T), zgodovinski (Z), ansambel (A) ter naivni referenci~$1/N$ in tržni indeks (Trg).}
+  \label{tab:regimescum}
+  \begin{tabular}{lrrrrr}
+    \toprule
+    Režim & T & Z & A & $1/N$ & Trg\\
+    \midrule
+    2013--2017 (umirjen trg)      & $+630$ & $+258$ & $+550$ & $+133$ & $+81$\\
+    GFC (kriza 2008)              & $+145$ & $-8$   & $+151$ & $+26$  & $-3$\\
+    COVID (kriza 2020)            & $+125$ & $+244$ & $+229$ & $+107$ & $+86$\\
+    2022--2024 (dvig obr.\ mer)   & $+92$  & $+29$  & $+100$ & $+41$  & $+29$\\
+    divuniverse (brez velikanov)  & $+197$ & $+16$  & $+183$ & $+50$  & $+31$\\
+    headline (z velikani)         & $+42$  & $+39$  & $+28$  & $+60$  & $+31$\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{regime_grid_algos}
+  \caption{Kumulativni donos transformerskega cevovoda čez vseh šest režimov. V vsakem panelu so posamezne metahevristike RD/SO/GA, kot referenca pa klasični zgodovinski cevovod (siva črtkana). Znotraj vsakega režima se solverji tesno ujemajo; razlike med paneli izvirajo iz napovednega signala in tržnega režima.}
+  \label{fig:regimegrid}
+\end{figure}
+
+\section{Združeni preizkus in zunanja veljavnost}
+\label{sec:pooled}
+
+Osrednji rezultat dobimo z združevanjem vseh~$n\approx 254$ oken (Tabela~\ref{tab:pooled}). Transformerski cevovod doseže letni Sharpov količnik~$0{,}97$ (ansambel~$1{,}01$), bistveno več kot vse reference (zgodovinski~$0{,}64$, BL~$0{,}58$, LSTM~$0{,}58$, gradientni gozd~$0{,}35$). Prednost je značilna po večih merilih: razlika kumulativnega donosa po oknih je za gradientni gozd in LSTM značilna pri~$p<0{,}01$ ter za BL in zgodovinski cevovod pri~$p<0{,}05$; test razlike Sharpovih količnikov~\cite{ledoitwolf2008,memmel2003} to potrdi ($\Delta$SK do~$+0{,}62$,~$p<0{,}001$); vseh~$12$~parnih testov prestane popravek Benjamini-Hochberg~\cite{benjamini1995}. Najbolj prepričljiv je na izbiro popravljeni Sharpov količnik~\cite{baileylopez2014}: ostaneta značilno pozitivna \emph{le} transformer (PSK~$0{,}994$) in ansambel ($0{,}996$), medtem ko \emph{vse} reference tej korekciji podležejo.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Združeni rezultati čez vseh šest režimov ($n\approx 254$ oken). Parni preizkusi glede na transformer: razlika kum.\ donosa na okno ($\Delta$don.), njena~$p$-vrednost, razlika letnega Sharpa ($\Delta$SK) in na izbiro popravljeni Sharpov količnik (PSK).}
+  \label{tab:pooled}
+  \begin{tabular}{lrrrrr}
+    \toprule
+    Strategija & Sharpe & $\Delta$don.\% & $p$ & $\Delta$SK & PSK\\
+    \midrule
+    Transformer      & 0{,}97 & ---   & ---     & ---    & 0{,}994\\
+    Ansambel         & 1{,}01 & ---   & ---     & ---    & 0{,}996\\
+    Zgodovinski      & 0{,}64 & $+1{,}22$ & 0{,}031 & $+0{,}33$ & 0{,}834\\
+    Black-Litterman  & 0{,}58 & $+1{,}38$ & 0{,}023 & $+0{,}39$ & 0{,}762\\
+    LSTM             & 0{,}58 & $+1{,}26$ & 0{,}001 & $+0{,}39$ & 0{,}762\\
+    Gradientni gozd  & 0{,}35 & $+2{,}03$ & $<0{,}001$ & $+0{,}62$ & 0{,}360\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Poleg Sharpovega količnika Tabela~\ref{tab:pooledrisk} podaja še dodatne mere tveganja na združenih dnevnih donosih. Transformer in ansambel prekašata zgodovinski scenarij po vseh merilih: višji Sortinov količnik (boljše razmerje do negativne volatilnosti) in višje razmerje Omega, ob primerljivi volatilnosti in največjem upadu. Visok največji upad ($\sim\!60\,\%$) pri vseh scenarijih izvira iz vključenih kriznih režimov (2008, 2020).
+
+\begin{table}[htbp]
+  \centering
+  \caption{Dodatne mere uspešnosti in tveganja na združenih dnevnih donosih (algoritem RD, čez vseh šest režimov): letni Sharpov in Sortinov količnik, razmerje Omega, največji upad in letna volatilnost.}
+  \label{tab:pooledrisk}
+  \begin{tabular}{lrrrrr}
+    \toprule
+    Scenarij & Sharpe & Sortino & Omega & Max.\ upad (\%) & Volatilnost (\%)\\
+    \midrule
+    Transformer & 0{,}97 & 1{,}30 & 1{,}21 & 63 & 34\\
+    Ansambel    & 1{,}01 & 1{,}30 & 1{,}22 & 62 & 33\\
+    Zgodovinski & 0{,}64 & 0{,}82 & 1{,}13 & 65 & 30\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Poštena omejitev in vloga ansambla.} Prednost pred \emph{golim zgodovinskim povprečjem} ostaja ekonomsko smiselna, a statistično mejna ($\Delta$don.~$+1{,}2\,\%$ na okno;~$\Delta$SK~$+0{,}33$,~$p\approx 0{,}07$); to je pošteno predstaviti kot mejno in ne kot dokazano prednost. Prav zato je vloga ansambla v robustnosti. To se najbolje pokaže v edinem režimu, kjer transformer zaostane za zgodovinskim --- pri okrevanju po pandemiji (Slika~\ref{fig:ensadv}): transformer tam doseže le~$+125\,\%$, ansambel Hedge pa sledi zmagovalnemu zgodovinskemu ekspertu in ostane pri~$+229\,\%$ (zgodovinski~$+244\,\%$), namesto da bi se sesul na raven transformerja. To je neposredna ponazoritev meje regreta: kombinacija ne sledi izgubljajočemu viru navzdol, temveč ostane ob najboljšem. V režimih, kjer transformer zmaga (npr.\ kriza 2008 in obdobje 2022), ansambel celo \emph{prekaša oba} eksperta (Slika~\ref{fig:walkforward}).
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{ensemble_advantage_covid}
+  \caption{Robustnost ansambla v edinem režimu, kjer transformer zaostane za zgodovinskim --- okrevanje po pandemiji (COVID 2020). Ansambel Hedge sledi zmagovalnemu zgodovinskemu ekspertu ($+229\,\%$ proti transformerjevim~$+125\,\%$), namesto da bi se sesul na raven transformerja.}
+  \label{fig:ensadv}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{walkforward_divuniverse_panels}\\[2pt]
+  \includegraphics[width=\linewidth]{walkforward_gfc_panels}
+  \caption{Kumulativni donos vseh treh metahevristik v dveh nasprotnih režimih: umirjeno obdobje \emph{divuniverse} (zgoraj) in kriza 2008 (spodaj). Vse tri metahevristike se tesno ujemajo in opazno prekašajo klasični cevovod ter~$1/N$; prednost je najizrazitejša v krizi.}
+  \label{fig:walkforward}
+\end{figure}
+
+\paragraph{Neposredni primerjavi na tujem protokolu.}\label{sec:headtohead}
+Da se izognemo očitku, da so rezultati odvisni od naše izbire režimov, cevovod poženemo tudi na protokolu dveh objavljenih študij. (i)~Na protokolu Ramos in sod.~\cite{ramos2023} (S\&P~100, 2011--2021, kardinalna omejitev do~$20$ sredstev, drseče okno, $30$~bazičnih točk) naš transformerski cevovod doseže letni Sharpov količnik~$1{,}11$ (ansambel~$1{,}07$), kar preseže njihovo objavljeno referenco indeksa S\&P~100 ($0{,}99$). (ii)~Na protokolu Fernandes in Desell~\cite{fernandes2026} ($50$~delnic S\&P~500, 2022--2023, četrtletno rebalansiranje, stroški) naš cevovod doseže Sharpe~$0{,}77$ proti njihovemu najboljšemu modelu (AttentionLSTM,~$0{,}29$), in to ob \emph{strožji} kardinalni omejitvi ($K{=}10$). Ker se univerzumi, ciljne funkcije in omejitve ne ujemajo popolnoma, sta primerjavi na ravni protokola in metrike, a obe kažeta v isto smer.
+
+\section{Testiranje po posameznih režimih}
+\label{sec:perregime}
+
+V tem razdelku za vsak testni režim (in za obe neposredni primerjavi na tujem protokolu) podamo podrobno razlago tržnih razmer in komentar rezultatov, skupaj s tremi slikami postopnega vrednotenja na eni strani: (i)~kumulativni donos vseh treh scenarijev za vsako metahevristiko (RD/SO/GA) posebej, (ii)~zbirni prikaz kumulativnega donosa reprezentativnega solverja (RD) z referenčnimi strategijami ter (iii)~sestava portfelja skozi čas. Pri slednji je za preglednost prikazanih le~$12$ najpogosteje izbranih sredstev, ostala pa so združena v postavko ``drugo''; v \emph{vsakem} oknu je zaradi kardinalne omejitve izbranih natanko~$K=10$ sredstev, množica pa se ob mesečnem rebalansiranju spreminja.
+
+\subsection{2013--2017: umirjeno obdobje z vračanjem k sredini}
+\label{sec:reg-201301}
+
+Obdobje 2013--2017 je bilo dolgotrajen bikovski trg z nizko volatilnostjo in postopno rastjo ob podpori ohlapne denarne politike. Presečni signali (relativna moč med delnicami) so v takem okolju stabilni, zato je to najugodnejši režim za napovedni model: transformer doseže najvišji Sharpe med vsemi režimi ($1{,}96$ proti zgodovinskim~$1{,}34$; Tabela~\ref{tab:regimes}) in končni donos~$+630\,\%$ proti~$+258\,\%$ (Tabela~\ref{tab:regimescum}). Slika~\ref{fig:reg-201301} kaže, da vse tri metahevristike sledijo skoraj identični poti, transformerski scenarij pa se od zgodovinskega loči že zgodaj in prednost vztrajno veča. Ansambel se tesno drži transformerja ($+550\,\%$), saj Hedge hitro prepozna zmagujočega eksperta. Sestava portfelja je razmeroma stabilna, z zmernim obratom med rebalansiranji.
+
+\begin{figure}[p]
+  \centering
+  \includegraphics[height=0.30\textheight]{all_algorithms_grid_201301_201712}\\[3pt]
+  \includegraphics[height=0.30\textheight]{combined_walkforward_201301_201712}\\[3pt]
+  \includegraphics[height=0.26\textheight]{weights_top_201301_201712}
+  \caption{Režim 2013--2017 (umirjen trg): (zgoraj) kumulativni donos treh scenarijev za vsako metahevristiko posebej; (sredina) zbirni prikaz s klasičnimi in naivnimi referencami; (spodaj) sestava portfelja skozi walk-forward okna (12 najpogostejših sredstev + ``drugo''; v vsakem oknu natanko~$K=10$ aktivnih).}
+  \label{fig:reg-201301}
+\end{figure}
+
+\subsection{Globalna finančna kriza 2007--2010}
+\label{sec:reg-gfc}
+
+Globalna finančna kriza je najzahtevnejši preizkus: strm sistemski zlom jeseni 2008, sledi mu oster odboj 2009. Klasična zgodovinska ocena~$\vec{\mu}$ zaostaja, ker drseče povprečje počasi reagira na prelom in v padec vstopa s prevelikim tveganjem --- zgodovinski scenarij konča pri~$-8\,\%$ (Sharpe~$0{,}14$). Transformer, ki presečno razvršča relativno moč in prek dinamičnega~$P$~\eqref{eq:dynp} v visoki volatilnosti zmanjša izpostavljenost, se ubrani padca in izkoristi odboj ($+145\,\%$, Sharpe~$0{,}73$) --- to je največja relativna prednost transformerja med vsemi režimi. Ansambel prek Hedge celo rahlo prekaša transformerja ($+151\,\%$). Slika~\ref{fig:reg-gfc} lepo pokaže razhod med scenariji ob zlomu in obvladan upad transformerskega cevovoda; sestava portfelja se ob krizi izraziteje preureja (višji obrat) proti obrambnim sredstvom.
+
+\begin{figure}[p]
+  \centering
+  \includegraphics[height=0.30\textheight]{all_algorithms_grid_200701_201012_gfc2008}\\[3pt]
+  \includegraphics[height=0.30\textheight]{combined_walkforward_200701_201012_gfc2008}\\[3pt]
+  \includegraphics[height=0.26\textheight]{weights_top_200701_201012_gfc2008}
+  \caption{Režim globalne finančne krize 2007--2010: (zgoraj) trije scenariji po metahevristikah; (sredina) zbirni prikaz z referencami; (spodaj) sestava portfelja skozi okna (natanko~$K=10$ aktivnih na okno).}
+  \label{fig:reg-gfc}
+\end{figure}
+
+\subsection{Pandemija COVID 2019--2021}
+\label{sec:reg-covid}
+
+Pandemija je edini režim, kjer transformer zaostane za zgodovinsko referenco. Zlom marca 2020 je bil izjemno hiter, sledilo pa mu je še hitrejše, ozko okrevanje (V-oblika), ki ga je poganjala peščica sredstev z močnim vračanjem k sredini. V takem okolju drseče zgodovinsko povprečje, ki teža k nedavnim padcem, ujame prav ta odboj: zgodovinski scenarij doseže Sharpe~$1{,}73$ in~$+244\,\%$, transformer pa~$1{,}06$ in~$+125\,\%$ (Tabeli~\ref{tab:regimes} in~\ref{tab:regimescum}). Tu se pokaže vrednost ansambla: Hedge zazna, da zgodovinski ekspert vodi, in se nasloni nanj ($+229\,\%$), namesto da bi sledil šibkejšemu transformerju (glej tudi Sliko~\ref{fig:ensadv}). Slika~\ref{fig:reg-covid} prikazuje ta razhod in prilagoditev ansambla; portfelj se ob zlomu močno preuredi.
+
+\begin{figure}[p]
+  \centering
+  \includegraphics[height=0.30\textheight]{all_algorithms_grid_201906_202112_covid2020}\\[3pt]
+  \includegraphics[height=0.30\textheight]{combined_walkforward_201906_202112_covid2020}\\[3pt]
+  \includegraphics[height=0.26\textheight]{weights_top_201906_202112_covid2020}
+  \caption{Režim pandemije COVID 2019--2021: (zgoraj) trije scenariji po metahevristikah; (sredina) zbirni prikaz z referencami --- edini režim, kjer zgodovinski prekaša transformer; (spodaj) sestava portfelja skozi okna.}
+  \label{fig:reg-covid}
+\end{figure}
+
+\subsection{Obdobje dvigovanja obrestnih mer 2022--2024}
+\label{sec:reg-2022}
+
+Leto 2022 je zaznamovalo agresivno dvigovanje obrestnih mer in medvedji trg, ki mu je 2023--2024 sledilo okrevanje, poganjano z ozko skupino tehnoloških delnic. Sektorska razpršenost donosov je bila velika, kar nagrajuje presečno razvrščanje: transformer doseže Sharpe~$1{,}04$ in~$+92\,\%$ proti zgodovinskim~$0{,}47$ in~$+29\,\%$ (Tabeli~\ref{tab:regimes},~\ref{tab:regimescum}). Ansambel je tu med najboljšimi ($+100\,\%$) in celo prekaša oba posamezna eksperta, kar je skladno z mejo regreta Hedge. Slika~\ref{fig:reg-2022} kaže obvladan padec 2022 in sodelovanje v okrevanju 2023--2024 pri napovednih scenarijih.
+
+\begin{figure}[p]
+  \centering
+  \includegraphics[height=0.30\textheight]{all_algorithms_grid_202201_202412}\\[3pt]
+  \includegraphics[height=0.30\textheight]{combined_walkforward_202201_202412}\\[3pt]
+  \includegraphics[height=0.26\textheight]{weights_top_202201_202412}
+  \caption{Režim dvigovanja obrestnih mer 2022--2024: (zgoraj) trije scenariji po metahevristikah; (sredina) zbirni prikaz z referencami; (spodaj) sestava portfelja skozi okna.}
+  \label{fig:reg-2022}
+\end{figure}
+
+\subsection{2019--2022 brez tehnoloških velikanov (divuniverse)}
+\label{sec:reg-divuniverse}
+
+Ta režim je namenjen naslavljanju pomisleka, da prednost transformerja izvira zgolj iz statične stave na peščico tehnoloških velikanov (Apple, Microsoft, Nvidia ipd.). Iz univerzuma jih zato izločimo. Rezultat je poučen: prednost transformerja se \emph{poveča}, ne zmanjša --- Sharpe~$1{,}27$ proti zgodovinskim~$0{,}28$ in~$+197\,\%$ proti~$+16\,\%$ (Tabeli~\ref{tab:regimes},~\ref{tab:regimescum}). To potrjuje, da model zajema splošen presečni signal, ne le trenda mega-kapitalizacij. Slika~\ref{fig:reg-divuniverse} (in zgornji panel Slike~\ref{fig:walkforward}) prikazuje jasen in vztrajen razhod med napovednim in zgodovinskim scenarijem že brez velikanov.
+
+\begin{figure}[p]
+  \centering
+  \includegraphics[height=0.30\textheight]{all_algorithms_grid_201901_202212_divuniverse}\\[3pt]
+  \includegraphics[height=0.30\textheight]{combined_walkforward_201901_202212_divuniverse}\\[3pt]
+  \includegraphics[height=0.26\textheight]{weights_top_201901_202212_divuniverse}
+  \caption{Režim 2019--2022 brez tehnoloških velikanov (divuniverse): (zgoraj) trije scenariji po metahevristikah; (sredina) zbirni prikaz z referencami; (spodaj) sestava portfelja skozi okna --- brez mega-kapitalizacij.}
+  \label{fig:reg-divuniverse}
+\end{figure}
+
+\subsection{2019--2022 s tehnološkimi velikani (headline)}
+\label{sec:reg-headline}
+
+V polnem univerzumu z vključenimi tehnološkimi velikani je obdobje 2019--2022 najtežje za razlikovanje med scenariji: nekaj velikank je poganjalo tako velik del donosa, da že naivni~$1/N$ doseže spodoben rezultat ($+60\,\%$, celo nad transformerjevim~$+42\,\%$ v končnem donosu; Tabela~\ref{tab:regimescum}). Transformer in zgodovinski scenarij dosežeta enak Sharpe ($0{,}43$; Tabela~\ref{tab:regimes}), LSTM pa je tu izjemoma nekoliko boljši ($0{,}62$). To je pošten primer režima, kjer koncentrirana zmagovalna sredstva zabrišejo prednost presečnega razvrščanja. Slika~\ref{fig:reg-headline} kaže tesno prepletene scenarije; prav kontrast s prejšnjim (divuniverse) razkrije, da so velikani tu ``dvignili vse čolne''.
+
+\begin{figure}[p]
+  \centering
+  \includegraphics[height=0.30\textheight]{all_algorithms_grid_201901_202212}\\[3pt]
+  \includegraphics[height=0.30\textheight]{combined_walkforward_201901_202212}\\[3pt]
+  \includegraphics[height=0.26\textheight]{weights_top_201901_202212}
+  \caption{Režim 2019--2022 s tehnološkimi velikani (headline): (zgoraj) trije scenariji po metahevristikah; (sredina) zbirni prikaz z referencami; (spodaj) sestava portfelja skozi okna --- s koncentracijo v mega-kapitalizacije.}
+  \label{fig:reg-headline}
+\end{figure}
+
+\subsection{Neposredna primerjava: protokol Ramos in sod.\ (S\&P 100, 2011--2021)}
+\label{sec:reg-ramos}
+
+Za zunanjo veljavnost cevovod poženemo na protokolu Ramos in sod.~\cite{ramos2023} (S\&P~100, 2011--2021, kardinalna omejitev do~$20$ sredstev, drseče okno,~$30$~bazičnih točk). Gre za dolgo, pretežno bikovsko desetletje z vmesnimi popravki (2011, 2015--2016, 2018). Naš transformerski cevovod doseže letni Sharpe~$1{,}11$ (ansambel~$1{,}07$), kar preseže njihovo objavljeno referenco indeksa S\&P~100 ($0{,}99$; razdelek~\ref{sec:headtohead}). Slika~\ref{fig:reg-ramos} prikazuje potek na tem protokolu; ker se ciljna funkcija in omejitve ne ujemajo povsem z izvirno študijo, je primerjava na ravni metrike.
+
+\begin{figure}[p]
+  \centering
+  \includegraphics[height=0.30\textheight]{all_algorithms_grid_201101_202106}\\[3pt]
+  \includegraphics[height=0.30\textheight]{combined_walkforward_201101_202106}\\[3pt]
+  \includegraphics[height=0.26\textheight]{weights_top_201101_202106}
+  \caption{Neposredna primerjava na protokolu Ramos in sod.\ (S\&P~100, 2011--2021): (zgoraj) trije scenariji po metahevristikah; (sredina) zbirni prikaz z referencami; (spodaj) sestava portfelja skozi okna.}
+  \label{fig:reg-ramos}
+\end{figure}
+
+\subsection{Neposredna primerjava: protokol Fernandes in Desell (50 delnic S\&P 500, 2022--2023)}
+\label{sec:reg-fernandes}
+
+Drugi zunanji protokol je Fernandes in Desell~\cite{fernandes2026} ($50$~delnic S\&P~500, 2022--2023, četrtletno rebalansiranje, s stroški). To je kratko, volatilno obdobje (medvedji trg 2022, delno okrevanje 2023). Naš cevovod doseže Sharpe~$0{,}77$ proti njihovemu najboljšemu modelu (AttentionLSTM,~$0{,}29$), in to ob \emph{strožji} kardinalni omejitvi ($K{=}10$ namesto njihovih~$50$; razdelek~\ref{sec:headtohead}). Slika~\ref{fig:reg-fernandes} prikazuje potek; strožja kardinalnost pomeni bolj koncentriran portfelj, kar je pri tako kratkem horizontu razvidno iz večjega obrata v sestavi.
+
+\begin{figure}[p]
+  \centering
+  \includegraphics[height=0.30\textheight]{all_algorithms_grid_202201_202312}\\[3pt]
+  \includegraphics[height=0.30\textheight]{combined_walkforward_202201_202312}\\[3pt]
+  \includegraphics[height=0.26\textheight]{weights_top_202201_202312}
+  \caption{Neposredna primerjava na protokolu Fernandes in Desell (50 delnic S\&P~500, 2022--2023): (zgoraj) trije scenariji po metahevristikah; (sredina) zbirni prikaz z referencami; (spodaj) sestava portfelja skozi okna.}
+  \label{fig:reg-fernandes}
+\end{figure}
+
+\section{Pot do končne zasnove in ponovljivost}
+\label{sec:pot}
+
+Za pošteno oceno je pomembno dokumentirati tudi \emph{pot} do končne zasnove --- odločitve, ki so se izkazale za pravilne, in poskuse, ki niso pomagali.
+
+\paragraph{Odkrita napaka pri razmejitvi podatkov.} V eni od zgodnjih konfiguracij (COVID) se je učno obdobje napovednega modela končalo \emph{po} začetku testa, kar je pomenilo, da je zamrznjeni model del zgodnjih testnih oken videl že med učenjem. Napako smo prepoznali in odpravili tako, da se učenje konča strogo pred prvim testnim oknom. Napaka je zadevala izključno ta režim; ostali so bili od začetka pravilno razmejeni.
+
+\paragraph{Nevtralni razvrstitvenik namesto poudarjanja zmagovalcev.} Preučili smo možnost, da učno izgubo nagnemo k ``zmagovalcem'' (utež~$\alpha>0$). Takšen nagib res poveča donos v izrazito trendnih obdobjih (npr.\ vzpon peščice tehnoloških velikanov), a je \emph{režimsko toksičen}: v obdobjih vračanja k sredini poslabša napovedi. Ker je cilj \emph{robusten} model, smo se odločili za nevtralni razvrstitvenik ($\alpha=0$), ki v petih od šestih režimov premaga zgodovinsko referenco, poudarjanje zmagovalcev pa ohranili le kot možnost za analizo občutljivosti.
+
+\paragraph{Poskusi robustifikacije, ki niso pomagali.} Da bi izboljšali edini režim, kjer transformer zaostane (okrevanje po pandemiji), smo preizkusili tri literaturno podprte pristope: (1)~\emph{periodično doučevanje} modela na rastoči zgodovini, (2)~\emph{distribucijsko robustno učenje} po najslabši skupini (Group DRO) glede na volatilnostne režime in (3)~\emph{winsorizacijo} normiranih vhodov proti režimskemu premiku. Vsi trije so v tem režimu bodisi poslabšali bodisi niso opazno spremenili rezultata; pri prvih dveh se je celo pokazalo, da doučevanje na kriznih podatkih med okrevanjem zaostri napačen (mean-reversion) signal. Iz tega sklepamo, da je zaostanek v izrazitem vračanju k sredini lastnost samega napovednega signala in ne posledica pomanjkljivega učenja --- ravno zato je smiselna plast robustnosti (ansambel), ne pa iskanje enega samega modela, ki bi zmagal povsod.
+
+\paragraph{Ponovljivost.}\label{sec:reproduc}
+Poskuse izvajamo z eksplicitnimi naključnimi semeni; napovedni model se na vsak zagon nauči od začetka (brez shranjevanja modelov), surove rezultate pa pred izrisom shranimo, tako da napaka pri izrisu ali izvozu nikoli ne izgubi izračuna. Neodvisno kakovost optimizatorjev preverimo na standardnih primerih OR-Library (razdelek~\ref{sec:orlib}), kar loči kakovost solverjev od kakovosti napovedi. Celoten okvir --- napovedni model, optimizatorji in orkestracija --- je javno dostopen.

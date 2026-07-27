@@ -1,35 +1,29 @@
 """Online forecast-combination of cross-sectional μ 'experts' (Hedge).
 
-Replaces the single, regime-fragile winner-tilt hyperparameter (``topw_alpha``)
-with a *combination* of μ views whose weights adapt each walk-forward window
-from the experts' own realized performance — no parameter is fit on the test
-regimes and the mixing rate η is set from theory.
+Combines the per-window μ forecasts of several models into one blended μ whose
+weights adapt each walk-forward window from the experts' own realized
+performance — no parameter is fit on the test regimes and the mixing rate η is
+set from theory. Here the experts are the kept transformer pipelines plus the
+historical baseline (e.g. {hist, MASTER, TFT, TACTiS}).
 
-Experts (all causal, all cheap re-weightings of quantities already computed
-per window):
-  • ``hist``      — historical rolling-mean μ (the literature baseline itself)
-  • ``trans_gγ``  — the *neutral* transformer μ under a signed-power tilt
-                    ``sign(z)·|z|^γ`` for each γ in a fixed grid. γ<1 flattens
-                    (diversify), γ=1 is neutral, γ>1 sharpens the winners
-                    (the job the old topw_alpha did, now a dial, not a bake-in).
-
-Combination is the multiplicative-weights / Hedge algorithm (Freund &
-Schapire 1997; Cesa-Bianchi & Lugosi 2006). It carries an O(√(T ln K)) regret
-bound, so the blend cannot trail the best single expert — which *includes* the
-historical baseline — by more than that in ANY regime. This is the "bulletproof
-vs history" property: worst case it degrades to a robust forecast average
-(itself hard to beat under structural breaks — Wang & Hyndman 2023; Fed
-FEDS 2007-42), best case it adapts toward whichever view the current regime
-rewards.
+Combination is the multiplicative-weights / Hedge algorithm (Freund & Schapire
+1997; Cesa-Bianchi & Lugosi 2006). It carries an O(√(T ln K)) regret bound, so
+the blend cannot trail the best single expert — which *includes* the historical
+baseline — by more than that in ANY regime. This "near-best in every regime"
+robustness, applied to combining machine-learning return forecasts into a
+portfolio, follows Remlinger et al. (2023), who show online expert aggregation
+of ML return forecasts yields a higher portfolio Sharpe with similar turnover.
 
 Znanstvene reference (za pisanje teze):
   • Hedge / multiplicative-weights + regret bound:
       Freund, Y. & Schapire, R.E. (1997). "A Decision-Theoretic Generalization
-      of On-Line Learning and an Application to Boosting." Journal of Computer
-      and System Sciences 55(1):119–139.
-  • Prediction with expert advice (splošni okvir + regret analiza):
+      of On-Line Learning and an Application to Boosting." JCSS 55(1):119–139.
+  • Napovedovanje z nasvetom ekspertov (okvir + regret):
       Cesa-Bianchi, N. & Lugosi, G. (2006). "Prediction, Learning, and Games."
       Cambridge University Press.
+  • Ekspertna agregacija napovedi donosov v finance (domenska podpora):
+      Remlinger, C., Brière, M., Alasseur, C. & Mikael, J. (2023). "Expert
+      aggregation for financial forecasting." J. of Finance and Data Science.
 """
 import numpy as np
 
@@ -43,47 +37,45 @@ def _standardize(v):
     return (v - m) / sd
 
 
-def _signed_power(z, gamma):
-    return np.sign(z) * np.abs(z) ** gamma
-
-
 class HedgeMuEnsemble:
-    def __init__(self, gamma_grid=(0.5, 1.0, 2.0), n_windows=None,
-                 topk=10, eta=None):
-        self.gammas = tuple(float(g) for g in gamma_grid)
-        self.names = ["hist"] + [f"trans_g{g:g}" for g in self.gammas]
-        self.K = len(self.names)
+    """Hedge combination of an arbitrary set of named μ-experts.
+
+    expert_keys : list[str]  keys into the per-window ``mu_by_src`` dict, e.g.
+                             ["hist", "master", "tft", "tactis"].
+    """
+    def __init__(self, expert_keys, n_windows=None, topk=10, eta=None):
+        self.keys = list(expert_keys)
+        self.K = len(self.keys)
         self.topk = int(topk)
         # Theory-optimal Hedge rate (Cesa-Bianchi & Lugosi): η = sqrt(8 ln K / T).
-        # Set from the known horizon, never tuned on outcomes.
         T = max(int(n_windows) if n_windows else 8, 2)
         self.eta = float(eta) if eta is not None else np.sqrt(8.0 * np.log(self.K) / T)
         self.w = np.ones(self.K) / self.K
-        self._last_experts = None      # (K, N) standardized signals of last window
-        self.weight_history = []       # list of (K,) weight vectors actually used
+        self._last_experts = None       # (K, N) standardized signals of last window
+        self.weight_history = []        # (K,) weight vectors actually used per window
 
-    def experts(self, mu_hist, mu_trans):
-        z_h = _standardize(mu_hist)
-        z_t = _standardize(mu_trans)
-        rows = [z_h] + [_standardize(_signed_power(z_t, g)) for g in self.gammas]
-        return np.vstack(rows)          # (K, N)
-
-    def combine(self, mu_hist, mu_trans):
-        """Blend experts with the current weights and return a μ on the SAME
-        scale as ``mu_trans`` — so the risk parameter P and Σ trade-off behave
-        exactly as in the Transformer scenario and ONLY the cross-sectional
-        shape differs."""
-        E = self.experts(mu_hist, mu_trans)
+    def combine(self, mu_by_src, scale_ref):
+        """Blend the standardized expert μ's with current weights, then rescale
+        to the mean/std of ``scale_ref`` (historical μ) so the absolute level and
+        the P/Σ trade-off match the other μ-only scenarios; only the
+        cross-sectional SHAPE differs between scenarios."""
+        # varno: če ekspertni ključ manjka (npr. TACTiS v A/B načinu odda tac_plain),
+        # uporabi razumen nadomestek, sicer nevtralen (ničelni) signal.
+        def _get(k):
+            if k in mu_by_src: return mu_by_src[k]
+            if k == "tactis" and "tac_plain" in mu_by_src: return mu_by_src["tac_plain"]
+            return np.zeros_like(np.asarray(scale_ref, dtype=float))
+        E = np.vstack([_standardize(_get(k)) for k in self.keys])   # (K, N)
         self._last_experts = E
         self.weight_history.append(self.w.copy())
         blended = _standardize(self.w @ E)
-        t = np.asarray(mu_trans, dtype=float)
-        return blended * np.nanstd(t) + np.nanmean(t)
+        ref = np.asarray(scale_ref, dtype=float)
+        return blended * (np.nanstd(ref) + 1e-12) + np.nanmean(ref)
 
     def update(self, realized):
         """After the window resolves, score each expert by its realized top-K
-        equal-weight return and apply the Hedge multiplicative update. Uses only
-        past outcomes → the weights for window w depend on windows <w only."""
+        equal-weight return and apply the Hedge multiplicative update. Causal:
+        weights for window w depend only on windows < w."""
         if self._last_experts is None:
             return
         E, self._last_experts = self._last_experts, None
@@ -91,7 +83,7 @@ class HedgeMuEnsemble:
         gains = np.array([self._topk_return(sig, r) for sig in E])
         lo, hi = np.nanmin(gains), np.nanmax(gains)
         if hi - lo < 1e-12:
-            return                      # no information this round → weights unchanged
+            return                       # no information → weights unchanged
         loss = 1.0 - (gains - lo) / (hi - lo)   # best expert → 0 loss, in [0,1]
         self.w = self.w * np.exp(-self.eta * loss)
         self.w = self.w / self.w.sum()
