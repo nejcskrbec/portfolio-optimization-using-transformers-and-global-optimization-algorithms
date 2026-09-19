@@ -26,6 +26,10 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+archive/
+lightning_logs/
+test_results/
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -209,6 +213,5 @@ __marimo__/
 # macOS
 .DS_Store
 
-archive/
-lightning_logs/
-test_results/
+CLAUDE.md
+.claude/
