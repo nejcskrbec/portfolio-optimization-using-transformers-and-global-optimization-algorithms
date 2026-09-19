@@ -219,8 +219,28 @@ class _MasterDataset(_TorchDataset):
 # ----------------------------------------------------------------------------
 # gradnja podatkovnega kocke (cube) — deljena za train in inferenco
 # ----------------------------------------------------------------------------
+# Walk-forward refits ask for the *same* (tickers, start, end) at every decision
+# — with `model_refit: per_decision` that is one full yfinance download per
+# decision per seed. The request is deterministic, so memoize it for the process.
+_OHLCV_CACHE: dict[tuple, dict] = {}
+
+
+def reset_ohlcv_cache():
+    _OHLCV_CACHE.clear()
+
+
 def _download_ohlcv(tickers, start, end):
     """Vrne dict[ticker] -> DataFrame[open,high,low,close,volume]."""
+    key = (tuple(tickers), str(start), str(end))
+    hit = _OHLCV_CACHE.get(key)
+    if hit is not None:
+        return {tk: df.copy() for tk, df in hit.items()}
+    out = _download_ohlcv_uncached(tickers, start, end)
+    _OHLCV_CACHE[key] = {tk: df.copy() for tk, df in out.items()}
+    return out
+
+
+def _download_ohlcv_uncached(tickers, start, end):
     import yfinance as yf
     raw = yf.download(tickers, start=start, end=end, auto_adjust=True,
                       progress=False, group_by="ticker")
@@ -276,18 +296,15 @@ def train_master_us(config, df_train, avail_tickers, lookahead):
     D, N = cube.shape[0], cube.shape[1]
 
     # učni vzorci: dan >= T-1, label ni nan, znotraj učnega obdobja.
-    # Presečni dnevi s premalo delnicami se PRESKOČIJO: MASTER-jev drop_extreme
-    # (indices[k:-k], k=int(0.025·N)) vrne prazno pri N<20 → zscore(prazno)=nan →
-    # nan gradient poškoduje ves model. Zahtevamo vsaj MIN_STOCKS delnic/dan.
-    MIN_STOCKS = 25
-    train_samples, train_idx = [], []
-    valid_samples, valid_idx = [], []
-    valid_start = train_end - pd.Timedelta(days=120)
-    for di, dt in enumerate(dates):
-        if di < T_LOOKBACK - 1:
-            continue
-        if dt > train_end:
-            break
+    # Presečni dnevi s premalo delnicami se PRESKOČIJO. MASTER-jev drop_extreme je
+    # zdaj popravljen (glej base_model.drop_extreme): pri N, kjer int(0.025·N)=0,
+    # ne reže ničesar namesto da bi vrnil prazen paket, zato lahko MASTER deluje
+    # tudi na manjših univerzumih (npr. DJIA z 28 delnicami). Prag je zato vezan
+    # na `min_stocks_per_day` iz konfiguracije (privzeto 10) — dovolj velik, da
+    # sta presečni z-score in IC stabilna, a ne izključi majhnih indeksov.
+    MIN_STOCKS = int(mcfg.get("min_stocks_per_day", 10))
+
+    def _day_samples(di, dt):
         day_list = []
         for si, tk in enumerate(tickers):
             if not np.isfinite(cube[di, si, 221]):
@@ -295,40 +312,77 @@ def train_master_us(config, df_train, avail_tickers, lookahead):
             if np.all(cube[di, si, :158] == 0):
                 continue
             day_list.append((si, tk))
-        if len(day_list) < MIN_STOCKS:
-            continue
-        for si, tk in day_list:
-            if dt >= valid_start:
-                valid_samples.append((di, si))
-                valid_idx.append((dt, tk))
-            else:
-                train_samples.append((di, si))
-                train_idx.append((dt, tk))
+        return day_list if len(day_list) >= MIN_STOCKS else []
 
-    def _mk(ds_samples, ds_idx):
-        idx = pd.MultiIndex.from_tuples(ds_idx, names=["datetime", "instrument"])
-        return _MasterDataset(cube, dates, tickers, ds_samples, idx)
+    fit_days = [(di, dt) for di, dt in enumerate(dates)
+                if di >= T_LOOKBACK - 1 and dt <= train_end]
 
-    dl_train = _mk(train_samples, train_idx)
-    dl_valid = _mk(valid_samples, valid_idx) if valid_samples else None
-    print(f"  [MASTER] učni vzorci: {len(train_samples)}  "
-          f"validacijski: {len(valid_samples)}  (N≈{N}/dan)")
+    def _build(day_iter):
+        samples, idx = [], []
+        for di, dt in day_iter:
+            for si, tk in _day_samples(di, dt):
+                samples.append((di, si))
+                idx.append((dt, tk))
+        index = pd.MultiIndex.from_tuples(idx, names=["datetime", "instrument"])
+        return _MasterDataset(cube, dates, tickers, samples, index)
+
+    dl_full = _build(fit_days)
+    print(f"  [MASTER] učni vzorci (polno okno): {len(dl_full)}  (N≈{N}/dan)")
 
     seed = int(mcfg.get("seed", 0))
     n_epoch = int(mcfg.get("epochs", 15))
     beta = float(mcfg.get("beta", 5))
+    patience = int(mcfg.get("patience", 5))
+    horizon = int(lookahead)
+    validation_days = int(mcfg.get("validation_days", max(60, 2 * horizon)))
     save_dir = tempfile.mkdtemp(prefix="master_us_")
-    model = MASTERModel(
-        d_feat=158, d_model=256, t_nhead=4, s_nhead=2,
-        T_dropout_rate=0.5, S_dropout_rate=0.5, beta=beta,
-        gate_input_start_index=158, gate_input_end_index=221,
-        n_epochs=n_epoch, lr=float(mcfg.get("lr", 1e-5)), GPU=None, seed=seed,
-        train_stop_loss_thred=float(mcfg.get("train_stop_loss_thred", -1.0)),
-        save_path=save_dir, save_prefix="us",
-    )
-    print(f"  [MASTER] učenje ({n_epoch} epoh, beta={beta}, seed={seed}) ...")
-    model.fit(dl_train, dl_valid)
-    model.fitted = max(model.fitted, 0)   # zagotovi, da predict/inferenca deluje
+
+    def _new_model():
+        return MASTERModel(
+            d_feat=158, d_model=256, t_nhead=4, s_nhead=2,
+            T_dropout_rate=0.5, S_dropout_rate=0.5, beta=beta,
+            gate_input_start_index=158, gate_input_end_index=221,
+            n_epochs=n_epoch, lr=float(mcfg.get("lr", 1e-5)), GPU=None, seed=seed,
+            train_stop_loss_thred=float(mcfg.get("train_stop_loss_thred", -1.0)),
+            save_path=save_dir, save_prefix="us",
+        )
+
+    # Two-stage training: (1) select the epoch count on a held-out validation
+    # slice via the original MASTER's IC-based early stopping, (2) retrain a
+    # FRESH model on the FULL window (up to train_end) for exactly that many
+    # epochs, keeping the final weights. Stage 2's weights are current at the
+    # decision date -- symmetric with the historical baseline -- while stage 1
+    # supplies a real (validation-loss) stopping signal instead of guessing a
+    # fixed epoch count or relying on a training-loss plateau heuristic (which
+    # a paper-faithful constant-LR/low-LR MASTER rarely triggers early).
+    val_cut = max(0, len(fit_days) - validation_days)
+    train1_days, val1_days = fit_days[:val_cut], fit_days[val_cut:]
+    refit_on_full_window = len(train1_days) >= T_LOOKBACK and bool(val1_days)
+    if not refit_on_full_window:
+        # Regime too short for a validation split: fall back to the paper's
+        # fixed-epoch, no-selection behaviour on the full window.
+        print(f"  [MASTER] premalo dni za validation split; {n_epoch} epoh na "
+              f"polnem oknu brez izbire (konst. LR, beta={beta}, seed={seed})")
+        model = _new_model()
+        model.fit(dl_full)
+        model.fitted = max(model.fitted, 0)
+        best_epoch = n_epoch - 1
+    else:
+        dl_train1 = _build(train1_days)
+        dl_valid1 = _build(val1_days)
+        print(f"  [MASTER] 1. stopnja): {len(dl_train1)} vzorcev "
+              f"(validacija {len(val1_days)} dni): {len(dl_valid1)} vzorcev, "
+              f"patience={patience}, do {n_epoch} epoh ...")
+        model1 = _new_model()
+        best_epoch = model1.fit(dl_train1, dl_valid1, patience=patience, max_epochs=n_epoch)
+        del model1
+        n_epoch2 = max(1, int(best_epoch) + 1)
+        print(f"  [MASTER] 2. stopnja): {len(dl_full)} vzorcev na polnem oknu, "
+              f"{n_epoch2} epoh (konst. LR, beta={beta}, seed={seed}) ...")
+        model = _new_model()
+        model.fit(dl_full, max_epochs=n_epoch2)
+        model.fitted = max(model.fitted, 0)
+        best_epoch = n_epoch2 - 1
 
     return {
         "_type": "master_us",
@@ -337,12 +391,37 @@ def train_master_us(config, df_train, avail_tickers, lookahead):
         "ohlcv": ohlcv, "mkt_ohlcv": mkt_ohlcv,
         "norm_stats": stats, "lookahead": lookahead,
         "device": model.device,
+        "best_epoch": int(best_epoch),
+        "refit_on_full_window": refit_on_full_window,
     }
 
 
-def _raw_then_norm(ohlcv, mkt_ohlcv, tickers, lookahead, train_end):
-    """Zgradi cube s surovimi značilkami, izračuna median/MAD IZ UČNIH vrstic,
-    normira (RobustZScoreNorm, clip ±3, fillna 0). Vrne (cube, dates, (med,mad))."""
+# The raw feature cube depends only on (ohlcv, tickers, lookahead) — NOT on
+# train_end, which enters solely through the RobustZScoreNorm median/MAD below.
+# Walk-forward refits therefore rebuild an identical 222-feature cube at every
+# decision; memoize the raw stage and re-normalize per decision.
+_CUBE_CACHE: dict[tuple, tuple] = {}
+
+
+def reset_cube_cache():
+    _CUBE_CACHE.clear()
+
+
+def _raw_cube(ohlcv, mkt_ohlcv, tickers, lookahead):
+    key = (tuple(tickers), int(lookahead),
+           tuple(sorted(mkt_ohlcv)),
+           tuple(len(ohlcv[tk]) for tk in tickers),
+           str(max(ohlcv[tk].index[-1] for tk in tickers)))
+    hit = _CUBE_CACHE.get(key)
+    if hit is not None:
+        cube, dates = hit
+        return cube.copy(), dates
+    cube, dates = _build_raw_cube(ohlcv, mkt_ohlcv, tickers, lookahead)
+    _CUBE_CACHE[key] = (cube.copy(), dates)
+    return cube, dates
+
+
+def _build_raw_cube(ohlcv, mkt_ohlcv, tickers, lookahead):
     all_dates = None
     for tk in tickers:
         idx = ohlcv[tk].index
@@ -361,6 +440,14 @@ def _raw_then_norm(ohlcv, mkt_ohlcv, tickers, lookahead, train_end):
         cube[:, si, 158:221] = mkt_arr
         fwd = c.shift(-lookahead) / c.shift(-1) - 1.0
         cube[:, si, 221] = fwd.values.astype(np.float32)
+
+    return cube, dates
+
+
+def _raw_then_norm(ohlcv, mkt_ohlcv, tickers, lookahead, train_end):
+    """Zgradi cube s surovimi značilkami, izračuna median/MAD IZ UČNIH vrstic,
+    normira (RobustZScoreNorm, clip ±3, fillna 0). Vrne (cube, dates, (med,mad))."""
+    cube, dates = _raw_cube(ohlcv, mkt_ohlcv, tickers, lookahead)
 
     train_rows = dates <= train_end
     feat = cube[:, :, :221]

@@ -19,7 +19,17 @@ def zscore(x):
 def drop_extreme(x):
     sorted_tensor, indices = x.sort()
     N = x.shape[0]
-    percent_2_5 = int(0.025*N)  
+    percent_2_5 = int(0.025*N)
+    # Small-universe guard: when 2.5% of N rounds down to 0, keep every element.
+    # Upstream assumes a large cross-section (CSI300/500/800) where int(0.025*N)
+    # >= 1 always holds. For N < 40 percent_2_5 == 0 and `indices[0:-0]` is the
+    # EMPTY slice (Python -0 == 0), which masks the whole batch -> empty label ->
+    # nan loss -> zero gradient, so the model never learns. Keeping all elements
+    # is the correct degenerate behaviour (there is nothing to trim). For N >= 40
+    # this branch is never taken, so behaviour is byte-identical to upstream.
+    if percent_2_5 == 0:
+        mask = torch.ones_like(x, device=x.device, dtype=torch.bool)
+        return mask, x
     # Exclude top 2.5% and bottom 2.5% values
     filtered_indices = indices[percent_2_5:-percent_2_5]
     mask = torch.zeros_like(x, device=x.device, dtype=torch.bool)
@@ -154,22 +164,67 @@ class SequenceModel():
         self.model.load_state_dict(torch.load(param_path, map_location=self.device))
         self.fitted = 'Previously trained.'
 
-    def fit(self, dl_train, dl_valid=None):
+    def fit(self, dl_train, dl_valid=None, patience=None, max_epochs=None):
+        """Train the model.
+
+        Two independent modes, used as the two stages of a train/select/refit
+        cycle (see `master_us.py`):
+
+        Stage 1 -- epoch selection (``patience`` set, ``dl_valid`` supplied):
+        track validation IC, keep a snapshot of the best-scoring epoch, stop
+        after ``patience`` epochs without improvement, and restore the best
+        snapshot before returning ``best_epoch``. This stage's weights are
+        discarded by the caller -- only ``best_epoch`` is used.
+
+        Stage 2 -- final fit (``patience=None``, upstream behaviour, preserved
+        byte-for-byte): run a fixed epoch budget (``max_epochs``) on the full
+        window and keep the FINAL weights, breaking early only if
+        ``train_loss <= train_stop_loss_thred``.
+        """
         train_loader = self._init_data_loader(dl_train, shuffle=True, drop_last=True)
+        n_epochs = int(max_epochs) if max_epochs is not None else self.n_epochs
+        select = patience is not None and dl_valid is not None
+
         best_param = None
-        for step in range(self.n_epochs):
+        best_score = -np.inf
+        best_epoch = -1
+        bad = 0
+
+        for step in range(n_epochs):
             train_loss = self.train_epoch(train_loader)
             self.fitted = step
             if dl_valid:
                 predictions, metrics = self.predict(dl_valid)
                 print("Epoch %d, train_loss %.6f, valid ic %.4f, icir %.3f, rankic %.4f, rankicir %.3f." % (step, train_loss, metrics['IC'],  metrics['ICIR'],  metrics['RIC'],  metrics['RICIR']))
             else: print("Epoch %d, train_loss %.6f" % (step, train_loss))
-        
+
+            if select:
+                score = float(metrics['IC'])
+                if np.isfinite(score) and score > best_score:
+                    best_score, best_epoch, bad = score, step, 0
+                    best_param = copy.deepcopy(self.model.state_dict())
+                else:
+                    bad += 1
+                    if bad >= int(patience):
+                        print("  [MASTER] zgodnja ustavitev pri epohi %d "
+                              "(najboljsa epoha %d, valid IC %.4f)"
+                              % (step, best_epoch, best_score))
+                        break
+                continue
+
             if train_loss <= self.train_stop_loss_thred:
                 best_param = copy.deepcopy(self.model.state_dict())
                 torch.save(best_param, f'{self.save_path}/{self.save_prefix}_{self.seed}.pkl')
                 break
-        
+
+        if select and best_param is not None:
+            self.model.load_state_dict(best_param)
+            self.fitted = best_epoch
+
+        self.best_epoch = best_epoch
+        self.best_score = best_score
+        return best_epoch
+
 
     def predict(self, dl_test):
         if self.fitted<0:

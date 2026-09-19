@@ -8,7 +8,7 @@ TARGET   = portfolio_optimizer
 
 SRCS = main.cpp
 
-$(TARGET): $(SRCS) portfolio_common.h pso.cpp sa.cpp ga.cpp
+$(TARGET): $(SRCS) portfolio_common.h pso.cpp sa.cpp
 	$(CXX) $(CXXFLAGS) $(SRCS) -o $(TARGET)
 
 clean:

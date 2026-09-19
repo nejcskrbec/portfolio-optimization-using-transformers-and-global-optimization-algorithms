@@ -1,0 +1,150 @@
+{
+  "run_tag": "lit_wang_sp500_master_exp",
+  "output_dir": "test_results/literature/wang_sp500_master_exp",
+  "literature": {
+    "paper": "Wang, Shen, Chen, Yang, Tao & Yan (2023), ICLR \u2014 Towards One-Shot Neural Combinatorial Solvers (cardinality-constrained portfolio case study)",
+    "comparison_level": "SAME-DATA / SAME-CARDINALITY predict-then-optimize comparison. Uses the authors' own snp500.csv (494 full-history S&P 500 members), the exact train 2018-2020 / test 2021 split, 120-trading-day horizon, K=20, long-only, full investment, rf=3%. Signal + solver are substituted (our MASTER/TFT/PatchTST mu + PSO/SA vs their LSTM mu + Gurobi/CardNN); objective is our mean-variance P-tradeoff, NOT their max-Sharpe. Reported OOS metric is realized annualized Sharpe (mu-rf)/sigma computed Wang-style from daily realized portfolio returns, so it is directly comparable to their Table 3 / Fig 5. NOT an exact-objective replication.",
+    "reference_values": {
+      "history_opt_sharpe": 0.673,
+      "predict_then_opt_lstm_gurobi_sharpe": 1.082,
+      "predict_and_opt_lstm_cardnn_gs_sharpe": 1.968,
+      "cardnn_gs_avg_return": 0.4,
+      "lstm_gurobi_avg_return": 0.241,
+      "history_opt_avg_return": 0.139,
+      "sp500_avg_return": 0.235,
+      "cardnn_gs_avg_risk": 0.188,
+      "lstm_gurobi_avg_risk": 0.195,
+      "history_opt_avg_risk": 0.162,
+      "cardinality_k": 20,
+      "risk_free_annual": 0.03,
+      "horizon_trading_days": 120
+    }
+  },
+  "data": {
+    "source": "csv",
+    "path": "data/literature/wang/snp500.csv",
+    "date_column": "Date",
+    "start_date": "2018-01-02",
+    "end_date": "2021-12-31",
+    "strict_universe": false,
+    "min_observations": 1000
+  },
+  "protocol": {
+    "split_mode": "explicit",
+    "fit_start": "2018-01-02",
+    "fit_end": "2020-12-30",
+    "test_start": "2021-01-01",
+    "test_end": "2021-12-31",
+    "validation_observations": 120,
+    "forecast_horizon_days": 120,
+    "model_forecast_horizon_days": 120,
+    "decision_schedule": "nonoverlap_days",
+    "decision_step_days": 21,
+    "return_type": "simple",
+    "moment_frequency": "daily",
+    "moment_start_date": "2018-01-02",
+    "periods_per_year": 12,
+    "risk_free_annual": 0.03,
+    "risk_grid": {
+      "type": "P",
+      "values": [
+        0.5
+      ]
+    }
+  },
+  "portfolio": {
+    "cardinality_K": 20,
+    "w_min": 0.001,
+    "w_max": 1.0
+  },
+  "models": {
+    "master": {
+      "enabled": true,
+      "epochs": 100,
+      "validation_days": 126,
+      "lr": 1e-05,
+      "beta": 5,
+      "seed": 42,
+      "d_model": 256,
+      "t_nhead": 4,
+      "s_nhead": 2,
+      "temporal_dropout": 0.5,
+      "spatial_dropout": 0.5,
+      "min_stocks_per_day": 5,
+      "patience": 10
+    },
+    "tft": {
+      "enabled": false,
+      "seq_len": 252,
+      "epochs": 100,
+      "patience": 5,
+      "validation_days": 120,
+      "batch_size": 64,
+      "lr": 0.001,
+      "hidden_size": 20,
+      "heads": 1,
+      "dropout": 0.3,
+      "hidden_continuous_size": 8,
+      "gradient_clip_val": 0.01,
+      "seed": 42,
+      "accelerator": "mps",
+      "devices": 1,
+      "inference_device": "auto",
+      "inference_batch_size": 256
+    },
+    "patchtst": {
+      "enabled": false,
+      "seq_len": 336,
+      "epochs": 100,
+      "patience": 10,
+      "validation_days": 120,
+      "batch_size": 4,
+      "lr": 0.0001,
+      "patch_len": 16,
+      "stride": 8,
+      "d_model": 128,
+      "n_heads": 16,
+      "e_layers": 3,
+      "d_ff": 256,
+      "dropout": 0.2,
+      "fc_dropout": 0.2,
+      "head_dropout": 0.0,
+      "attn_dropout": 0.0,
+      "activation": "gelu",
+      "padding_patch": "end",
+      "revin": true,
+      "affine": false,
+      "subtract_last": false,
+      "res_attention": true,
+      "pre_norm": false,
+      "norm": "BatchNorm",
+      "pe": "zeros",
+      "learn_pe": true,
+      "individual": false,
+      "lr_schedule": "TST",
+      "pct_start": 0.2,
+      "seed": 2021,
+      "accelerator": "mps",
+      "inference_device": "auto"
+    }
+  },
+  "solvers": {
+    "pso": {
+      "enabled": true
+    },
+    "sa": {
+      "enabled": true
+    }
+  },
+  "run_settings": {
+    "seeds": [
+      42
+    ]
+  },
+  "smoke": {
+    "max_decisions": 2,
+    "risk_points": [
+      0.5
+    ]
+  }
+}

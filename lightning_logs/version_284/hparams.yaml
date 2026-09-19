@@ -1,4 +1,4 @@
-attention_head_size: 2
+attention_head_size: 1
 categorical_groups: {}
 causal_attention: true
 dataset_parameters:
@@ -10,52 +10,17 @@ dataset_parameters:
     __group_id__ticker: !!python/object:pytorch_forecasting.data.encoders.NaNLabelEncoder
       add_nan: false
       classes_:
-        AAPL: 0
-        ABT: 1
-        AMGN: 2
-        AXP: 3
-        BA: 4
-        BAC: 5
-        BMY: 6
-        C: 7
-        CAT: 8
-        CL: 9
-        COP: 10
-        CSCO: 11
-        CVX: 12
-        DIS: 13
-        DUK: 14
-        GE: 15
-        GS: 16
-        HD: 17
-        HON: 18
-        IBM: 19
-        INTC: 20
-        JNJ: 21
-        JPM: 22
-        KO: 23
-        LOW: 24
-        MCD: 25
-        MDT: 26
-        MMM: 27
-        MRK: 28
-        MSFT: 29
-        NEE: 30
-        ORCL: 31
-        PEP: 32
-        PFE: 33
-        PG: 34
-        QCOM: 35
-        SLB: 36
-        SO: 37
-        T: 38
-        TXN: 39
-        UNP: 40
-        USB: 41
-        VZ: 42
-        WFC: 43
-        WMT: 44
-        XOM: 45
+        XLB: 0
+        XLC: 1
+        XLE: 2
+        XLF: 3
+        XLI: 4
+        XLK: 5
+        XLP: 6
+        XLRE: 7
+        XLU: 8
+        XLV: 9
+        XLY: 10
       classes_vector_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - &id001 !!python/name:numpy.ndarray ''
@@ -66,7 +31,7 @@ dataset_parameters:
         state: !!python/tuple
         - 1
         - !!python/tuple
-          - 46
+          - 11
         - !!python/object/apply:numpy.dtype
           args:
           - U4
@@ -83,69 +48,19 @@ dataset_parameters:
           - 8
         - false
         - !!binary |
-          QQAAAEEAAABQAAAATAAAAEEAAABCAAAAVAAAAAAAAABBAAAATQAAAEcAAABOAAAAQQAAAFgAAABQ
-          AAAAAAAAAEIAAABBAAAAAAAAAAAAAABCAAAAQQAAAEMAAAAAAAAAQgAAAE0AAABZAAAAAAAAAEMA
-          AAAAAAAAAAAAAAAAAABDAAAAQQAAAFQAAAAAAAAAQwAAAEwAAAAAAAAAAAAAAEMAAABPAAAAUAAA
-          AAAAAABDAAAAUwAAAEMAAABPAAAAQwAAAFYAAABYAAAAAAAAAEQAAABJAAAAUwAAAAAAAABEAAAA
-          VQAAAEsAAAAAAAAARwAAAEUAAAAAAAAAAAAAAEcAAABTAAAAAAAAAAAAAABIAAAARAAAAAAAAAAA
-          AAAASAAAAE8AAABOAAAAAAAAAEkAAABCAAAATQAAAAAAAABJAAAATgAAAFQAAABDAAAASgAAAE4A
-          AABKAAAAAAAAAEoAAABQAAAATQAAAAAAAABLAAAATwAAAAAAAAAAAAAATAAAAE8AAABXAAAAAAAA
-          AE0AAABDAAAARAAAAAAAAABNAAAARAAAAFQAAAAAAAAATQAAAE0AAABNAAAAAAAAAE0AAABSAAAA
-          SwAAAAAAAABNAAAAUwAAAEYAAABUAAAATgAAAEUAAABFAAAAAAAAAE8AAABSAAAAQwAAAEwAAABQ
-          AAAARQAAAFAAAAAAAAAAUAAAAEYAAABFAAAAAAAAAFAAAABHAAAAAAAAAAAAAABRAAAAQwAAAE8A
-          AABNAAAAUwAAAEwAAABCAAAAAAAAAFMAAABPAAAAAAAAAAAAAABUAAAAAAAAAAAAAAAAAAAAVAAA
-          AFgAAABOAAAAAAAAAFUAAABOAAAAUAAAAAAAAABVAAAAUwAAAEIAAAAAAAAAVgAAAFoAAAAAAAAA
-          AAAAAFcAAABGAAAAQwAAAAAAAABXAAAATQAAAFQAAAAAAAAAWAAAAE8AAABNAAAAAAAAAA==
+          WAAAAEwAAABCAAAAAAAAAFgAAABMAAAAQwAAAAAAAABYAAAATAAAAEUAAAAAAAAAWAAAAEwAAABG
+          AAAAAAAAAFgAAABMAAAASQAAAAAAAABYAAAATAAAAEsAAAAAAAAAWAAAAEwAAABQAAAAAAAAAFgA
+          AABMAAAAUgAAAEUAAABYAAAATAAAAFUAAAAAAAAAWAAAAEwAAABWAAAAAAAAAFgAAABMAAAAWQAA
+          AAAAAAA=
       warn: true
-    ticker: !!python/object:pytorch_forecasting.data.encoders.NaNLabelEncoder
+    day_of_week: !!python/object:pytorch_forecasting.data.encoders.NaNLabelEncoder
       add_nan: false
       classes_: &id006
-        AAPL: 0
-        ABT: 1
-        AMGN: 2
-        AXP: 3
-        BA: 4
-        BAC: 5
-        BMY: 6
-        C: 7
-        CAT: 8
-        CL: 9
-        COP: 10
-        CSCO: 11
-        CVX: 12
-        DIS: 13
-        DUK: 14
-        GE: 15
-        GS: 16
-        HD: 17
-        HON: 18
-        IBM: 19
-        INTC: 20
-        JNJ: 21
-        JPM: 22
-        KO: 23
-        LOW: 24
-        MCD: 25
-        MDT: 26
-        MMM: 27
-        MRK: 28
-        MSFT: 29
-        NEE: 30
-        ORCL: 31
-        PEP: 32
-        PFE: 33
-        PG: 34
-        QCOM: 35
-        SLB: 36
-        SO: 37
-        T: 38
-        TXN: 39
-        UNP: 40
-        USB: 41
-        VZ: 42
-        WFC: 43
-        WMT: 44
-        XOM: 45
+        '0': 0
+        '1': 1
+        '2': 2
+        '3': 3
+        '4': 4
       classes_vector_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -156,7 +71,128 @@ dataset_parameters:
         state: !!python/tuple
         - 1
         - !!python/tuple
-          - 46
+          - 5
+        - !!python/object/apply:numpy.dtype
+          args:
+          - U1
+          - false
+          - true
+          state: !!python/tuple
+          - 3
+          - <
+          - null
+          - null
+          - null
+          - 4
+          - 4
+          - 8
+        - false
+        - !!binary |
+          MAAAADEAAAAyAAAAMwAAADQAAAA=
+      warn: true
+    month: !!python/object:pytorch_forecasting.data.encoders.NaNLabelEncoder
+      add_nan: false
+      classes_: &id007
+        '1': 0
+        '10': 1
+        '11': 2
+        '12': 3
+        '2': 4
+        '3': 5
+        '4': 6
+        '5': 7
+        '6': 8
+        '7': 9
+        '8': 10
+        '9': 11
+      classes_vector_: !!python/object/apply:numpy.core.multiarray._reconstruct
+        args:
+        - *id001
+        - !!python/tuple
+          - 0
+        - !!binary |
+          Yg==
+        state: !!python/tuple
+        - 1
+        - !!python/tuple
+          - 12
+        - !!python/object/apply:numpy.dtype
+          args:
+          - U2
+          - false
+          - true
+          state: !!python/tuple
+          - 3
+          - <
+          - null
+          - null
+          - null
+          - 8
+          - 4
+          - 8
+        - false
+        - !!binary |
+          MQAAAAAAAAAxAAAAMAAAADEAAAAxAAAAMQAAADIAAAAyAAAAAAAAADMAAAAAAAAANAAAAAAAAAA1
+          AAAAAAAAADYAAAAAAAAANwAAAAAAAAA4AAAAAAAAADkAAAAAAAAA
+      warn: true
+    region: !!python/object:pytorch_forecasting.data.encoders.NaNLabelEncoder
+      add_nan: false
+      classes_: &id008
+        US: 0
+      classes_vector_: !!python/object/apply:numpy.core.multiarray._reconstruct
+        args:
+        - *id001
+        - !!python/tuple
+          - 0
+        - !!binary |
+          Yg==
+        state: !!python/tuple
+        - 1
+        - !!python/tuple
+          - 1
+        - !!python/object/apply:numpy.dtype
+          args:
+          - U2
+          - false
+          - true
+          state: !!python/tuple
+          - 3
+          - <
+          - null
+          - null
+          - null
+          - 8
+          - 4
+          - 8
+        - false
+        - !!binary |
+          VQAAAFMAAAA=
+      warn: true
+    ticker: !!python/object:pytorch_forecasting.data.encoders.NaNLabelEncoder
+      add_nan: false
+      classes_:
+        XLB: 0
+        XLC: 1
+        XLE: 2
+        XLF: 3
+        XLI: 4
+        XLK: 5
+        XLP: 6
+        XLRE: 7
+        XLU: 8
+        XLV: 9
+        XLY: 10
+      classes_vector_: !!python/object/apply:numpy.core.multiarray._reconstruct
+        args:
+        - *id001
+        - !!python/tuple
+          - 0
+        - !!binary |
+          Yg==
+        state: !!python/tuple
+        - 1
+        - !!python/tuple
+          - 11
         - !!python/object/apply:numpy.dtype
           args:
           - U4
@@ -173,29 +209,20 @@ dataset_parameters:
           - 8
         - false
         - !!binary |
-          QQAAAEEAAABQAAAATAAAAEEAAABCAAAAVAAAAAAAAABBAAAATQAAAEcAAABOAAAAQQAAAFgAAABQ
-          AAAAAAAAAEIAAABBAAAAAAAAAAAAAABCAAAAQQAAAEMAAAAAAAAAQgAAAE0AAABZAAAAAAAAAEMA
-          AAAAAAAAAAAAAAAAAABDAAAAQQAAAFQAAAAAAAAAQwAAAEwAAAAAAAAAAAAAAEMAAABPAAAAUAAA
-          AAAAAABDAAAAUwAAAEMAAABPAAAAQwAAAFYAAABYAAAAAAAAAEQAAABJAAAAUwAAAAAAAABEAAAA
-          VQAAAEsAAAAAAAAARwAAAEUAAAAAAAAAAAAAAEcAAABTAAAAAAAAAAAAAABIAAAARAAAAAAAAAAA
-          AAAASAAAAE8AAABOAAAAAAAAAEkAAABCAAAATQAAAAAAAABJAAAATgAAAFQAAABDAAAASgAAAE4A
-          AABKAAAAAAAAAEoAAABQAAAATQAAAAAAAABLAAAATwAAAAAAAAAAAAAATAAAAE8AAABXAAAAAAAA
-          AE0AAABDAAAARAAAAAAAAABNAAAARAAAAFQAAAAAAAAATQAAAE0AAABNAAAAAAAAAE0AAABSAAAA
-          SwAAAAAAAABNAAAAUwAAAEYAAABUAAAATgAAAEUAAABFAAAAAAAAAE8AAABSAAAAQwAAAEwAAABQ
-          AAAARQAAAFAAAAAAAAAAUAAAAEYAAABFAAAAAAAAAFAAAABHAAAAAAAAAAAAAABRAAAAQwAAAE8A
-          AABNAAAAUwAAAEwAAABCAAAAAAAAAFMAAABPAAAAAAAAAAAAAABUAAAAAAAAAAAAAAAAAAAAVAAA
-          AFgAAABOAAAAAAAAAFUAAABOAAAAUAAAAAAAAABVAAAAUwAAAEIAAAAAAAAAVgAAAFoAAAAAAAAA
-          AAAAAFcAAABGAAAAQwAAAAAAAABXAAAATQAAAFQAAAAAAAAAWAAAAE8AAABNAAAAAAAAAA==
+          WAAAAEwAAABCAAAAAAAAAFgAAABMAAAAQwAAAAAAAABYAAAATAAAAEUAAAAAAAAAWAAAAEwAAABG
+          AAAAAAAAAFgAAABMAAAASQAAAAAAAABYAAAATAAAAEsAAAAAAAAAWAAAAEwAAABQAAAAAAAAAFgA
+          AABMAAAAUgAAAEUAAABYAAAATAAAAFUAAAAAAAAAWAAAAEwAAABWAAAAAAAAAFgAAABMAAAAWQAA
+          AAAAAAA=
       warn: true
   constant_fill_strategy: null
   group_ids:
   - ticker
   lags: null
-  max_encoder_length: 45
-  max_prediction_length: 21
-  min_encoder_length: 22
-  min_prediction_idx: 1
-  min_prediction_length: 1
+  max_encoder_length: 252
+  max_prediction_length: 5
+  min_encoder_length: 126
+  min_prediction_idx: 0
+  min_prediction_length: 5
   predict_mode: false
   randomize_length: null
   scalers:
@@ -274,7 +301,7 @@ dataset_parameters:
         - -1
         - 0
       - !!binary |
-        5DsBAAAAAAA=
+        ogwAAAAAAAA=
       scale_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -338,12 +365,12 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          z/ZI2bubfT8=
+          KwsI5bbJdj8=
       n_features_in_: 1
       n_samples_seen_: !!python/object/apply:numpy.core.multiarray.scalar
       - *id004
       - !!binary |
-        5DsBAAAAAAA=
+        ogwAAAAAAAA=
       scale_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -358,7 +385,7 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          MVXuQEWttT8=
+          5LZAvoG0pz8=
       var_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -373,7 +400,7 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          oYI5NSpefT8=
+          Rmknt3SPYT8=
       with_mean: true
       with_std: true
     relative_time_idx: !!python/object:sklearn.preprocessing._data.StandardScaler
@@ -412,7 +439,7 @@ dataset_parameters:
       n_samples_seen_: !!python/object/apply:numpy.core.multiarray.scalar
       - *id004
       - !!binary |
-        5DsBAAAAAAA=
+        ogwAAAAAAAA=
       scale_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -476,12 +503,12 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          gXQjrcbPJz8=
+          I0J1L4LdKz8=
       n_features_in_: 1
       n_samples_seen_: !!python/object/apply:numpy.core.multiarray.scalar
       - *id004
       - !!binary |
-        5DsBAAAAAAA=
+        ogwAAAAAAAA=
       scale_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -496,7 +523,7 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          KDQwEFJfNj8=
+          aSa2nyXcOz8=
       var_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -511,7 +538,7 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          2bGpjFlIfz4=
+          06UDA2pBiD4=
       with_mean: true
       with_std: true
     ret_scale: !!python/object:sklearn.preprocessing._data.StandardScaler
@@ -545,12 +572,12 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          JMczlGw4lj8=
+          0FE17CeuiD8=
       n_features_in_: 1
       n_samples_seen_: !!python/object/apply:numpy.core.multiarray.scalar
       - *id004
       - !!binary |
-        5DsBAAAAAAA=
+        ogwAAAAAAAA=
       scale_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -565,7 +592,7 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          Xsx8nxbQdz8=
+          qcwu9CaVXj8=
       var_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -580,7 +607,7 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          jrpsq2m4AT8=
+          xh7JPGA6zT4=
       with_mean: true
       with_std: true
     vol20: !!python/object:sklearn.preprocessing._data.StandardScaler
@@ -614,12 +641,12 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          dmaaVN2fkj8=
+          talvwLkdhT8=
       n_features_in_: 1
       n_samples_seen_: !!python/object/apply:numpy.core.multiarray.scalar
       - *id004
       - !!binary |
-        5DsBAAAAAAA=
+        ogwAAAAAAAA=
       scale_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -634,7 +661,7 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          AGqf9klLhz8=
+          kyG8W772cT8=
       var_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -649,14 +676,14 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          RSjkdev0ID8=
+          I2VNqTEr9D4=
       with_mean: true
       with_std: true
   static_categoricals:
-  - ticker
+  - region
   static_reals: null
   target: ret
-  target_normalizer: &id007 !!python/object:pytorch_forecasting.data.encoders.GroupNormalizer
+  target_normalizer: &id009 !!python/object:pytorch_forecasting.data.encoders.GroupNormalizer
     _groups:
     - ticker
     _method_kwargs: {}
@@ -666,8 +693,8 @@ dataset_parameters:
     method: standard
     method_kwargs: {}
     missing_:
-      center: 0.00018944457006041525
-      scale: 0.02039195977131055
+      center: 9.546676693346572e-05
+      scale: 0.01239596967120985
     norm_: !!python/object:pandas.core.frame.DataFrame
       _flags:
         allows_duplicate_labels: true
@@ -686,23 +713,27 @@ dataset_parameters:
             - 1
             - !!python/tuple
               - 2
-              - 46
-            - *id002
+              - 11
+            - !!python/object/apply:numpy.dtype
+              args:
+              - f8
+              - false
+              - true
+              state: !!python/tuple
+              - 3
+              - <
+              - null
+              - null
+              - null
+              - -1
+              - -1
+              - 0
             - false
             - !!binary |
-              NGwHal2sRD/Dj0Hs8zg3P2G1ANPVbQg/1/GV+UROKT87X5vwsuFAP+62vSkt+EM/HEWvhAccNr+O
-              co97WOI1P4LECcLKd0Q/08CibMseGD+37jewi+FIP5BdmHOJaDm/mh7UKWm0PT894cCHO5IeP8NX
-              C2efCTg/miG97WdWFL9OGzP16DRAPw86Tytcry+/qz+RZaTzBL94dipKoEMSvwpv8jD9mTq/6ICz
-              cljmMT85oTFSFcgiP4zjhB1QadO+V6cRKUTBPj8+sjRpN1kgPwhyNimIKzI/ppEi2b9AOD/9fqhb
-              PoIYv9jStLlHdjO/USqG+qQNRz8MRQXU6Ec0v+f+K0N8szc/nk1ecVggBL/16tD0I1soP3eSrkp/
-              Aj+/7g/NGlseQT+zwoTmjHRIP7MSPcsZKw8/2OZ7nha7NL+mgLpmcU5AP7IT3bH9GD8/Q63lu7b5
-              GL/V/2CZB249P5einPzZJie/ePGlKYHyPj9pIbTKI8eiPyIVj5rjYJM/vfsHon2nmj/gvnEveOmV
-              P9HRHqZbBpY/Gz8mwP+Hkj8q7xP6r2uWP8va6roh0ZQ/YzNMBfaElT88EWI1zO+RP809aDv5LpI/
-              obm0EFgooT8GsbJ/p9GPP8PEWXEwy5c/7cgdJbM8lT8qR0du+RmUP9i2GVFOxJc/zO7Lm4qSmT+l
-              uAQcMfWZP31VUcGICpU/rZ6w3gkVoD8VM/ML/oqPPxhgnP3v/5c/qSPosVrCkD9bbG0+10CYP6+p
-              tZ8rwZM/c7QucaoUkz8XV+BE4uKQP2K3oscg8pQ/fJXKHAPWlz9uArskjJGOPx6BjGzu16E/HmVR
-              fHWPjz9H67fyfOqTP8zC3ECAdJI/G4wmvOHfoj8vpmQSxCmYPwNKMFV1BY4/EB/j4NBBlT9vmaBV
-              l8ShP7sIuqTWw5E/Ib0h1Au4lD94I5NaRCmUP5q5mGW/B5A/Q1Ch1iH7kz9qLnvET5CQPw==
+              AGnXQs0mB7+f9DyRqgYZPxaq42GB00m/L3HkgYHM9j7N7RiNxzMWP7rBpO9EKDw/CDpR+ZPNQz/v
+              DHoBhHFGP09hY7+vtks/6bGXNs5QFT+Xbsvfuyo1P1NuuOIOY4k/K97lImXRiz9BweYJt36NP9ZS
+              7LpQ/Ig/8Zf7rVxriT/ru7Zo9iaPP/I/dI4PkYI/mPW17ddGhT8gvNoYU0CDPzBxI3fNZ4Y/nmz+
+              OOC5iT8=
           - !!python/object/apply:builtins.slice
             - 0
             - 2
@@ -721,7 +752,20 @@ dataset_parameters:
               - 1
               - !!python/tuple
                 - 2
-              - *id003
+              - !!python/object/apply:numpy.dtype
+                args:
+                - O8
+                - false
+                - true
+                state: !!python/tuple
+                - 3
+                - '|'
+                - null
+                - null
+                - null
+                - -1
+                - -1
+                - 63
               - false
               - - center
                 - scale
@@ -738,24 +782,34 @@ dataset_parameters:
               state: !!python/tuple
               - 1
               - !!python/tuple
-                - 46
-              - *id004
+                - 11
+              - !!python/object/apply:numpy.dtype
+                args:
+                - i8
+                - false
+                - true
+                state: !!python/tuple
+                - 3
+                - <
+                - null
+                - null
+                - null
+                - -1
+                - -1
+                - 0
               - false
               - !!binary |
                 AAAAAAAAAAABAAAAAAAAAAIAAAAAAAAAAwAAAAAAAAAEAAAAAAAAAAUAAAAAAAAABgAAAAAAAAAH
-                AAAAAAAAAAgAAAAAAAAACQAAAAAAAAAKAAAAAAAAAAsAAAAAAAAADAAAAAAAAAANAAAAAAAAAA4A
-                AAAAAAAADwAAAAAAAAAQAAAAAAAAABEAAAAAAAAAEgAAAAAAAAATAAAAAAAAABQAAAAAAAAAFQAA
-                AAAAAAAWAAAAAAAAABcAAAAAAAAAGAAAAAAAAAAZAAAAAAAAABoAAAAAAAAAGwAAAAAAAAAcAAAA
-                AAAAAB0AAAAAAAAAHgAAAAAAAAAfAAAAAAAAACAAAAAAAAAAIQAAAAAAAAAiAAAAAAAAACMAAAAA
-                AAAAJAAAAAAAAAAlAAAAAAAAACYAAAAAAAAAJwAAAAAAAAAoAAAAAAAAACkAAAAAAAAAKgAAAAAA
-                AAArAAAAAAAAACwAAAAAAAAALQAAAAAAAAA=
+                AAAAAAAAAAgAAAAAAAAACQAAAAAAAAAKAAAAAAAAAA==
             name: ticker
       _typ: dataframe
       attrs: {}
     scale_by_group: false
     transformation: null
   time_idx: time_idx
-  time_varying_known_categoricals: null
+  time_varying_known_categoricals:
+  - day_of_week
+  - month
   time_varying_known_reals: null
   time_varying_unknown_categoricals: null
   time_varying_unknown_reals:
@@ -764,41 +818,53 @@ dataset_parameters:
   - vol20
   variable_groups: null
   weight: null
-dropout: 0.1
+dropout: 0.3
 embedding_labels:
-  ticker: *id006
+  day_of_week: *id006
+  month: *id007
+  region: *id008
 embedding_paddings: []
 embedding_sizes:
-  ticker: !!python/tuple
-  - 46
-  - 14
+  day_of_week: !!python/tuple
+  - 5
+  - 4
+  month: !!python/tuple
+  - 12
+  - 6
+  region: !!python/tuple
+  - 1
+  - 1
 hidden_continuous_size: 8
 hidden_continuous_sizes: {}
-hidden_size: 16
-learning_rate: 0.001
+hidden_size: 160
+learning_rate: 0.01
 log_gradient_flow: false
 log_interval: -1
-log_val_interval: null
+log_val_interval: -1
 lstm_layers: 1
 mask_bias: -1000000000.0
-max_encoder_length: 45
+max_encoder_length: 252
 monotone_constraints: {}
 optimizer: adam
 optimizer_params: null
 output_size: 7
-output_transformer: *id007
+output_transformer: *id009
 reduce_on_plateau_min_lr: 1.0e-05
-reduce_on_plateau_patience: 1000
+reduce_on_plateau_patience: 2
 reduce_on_plateau_reduction: 2.0
 share_single_variable_networks: false
 static_categoricals:
-- ticker
+- region
 static_reals:
 - encoder_length
 - ret_center
 - ret_scale
-time_varying_categoricals_decoder: []
-time_varying_categoricals_encoder: []
+time_varying_categoricals_decoder:
+- day_of_week
+- month
+time_varying_categoricals_encoder:
+- day_of_week
+- month
 time_varying_reals_decoder:
 - relative_time_idx
 time_varying_reals_encoder:
@@ -808,7 +874,9 @@ time_varying_reals_encoder:
 - vol20
 weight_decay: 0.0
 x_categoricals:
-- ticker
+- region
+- day_of_week
+- month
 x_reals:
 - encoder_length
 - ret_center

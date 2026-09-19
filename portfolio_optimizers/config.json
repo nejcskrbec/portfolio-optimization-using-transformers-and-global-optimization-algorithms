@@ -1,31 +1,19 @@
 {
-  "_comment": "Solver hiperparametri za C++ metahevristike — LASTNIK teh nastavitev. Benchmark configi (benchmark/configs/*.json) nosijo SAMO problemske omejitve (blok 'portfolio': cardinality_K, w_min, w_max, risk_parameter); run_benchmark.py ju ob zagonu zlije v optimizer_config. Standalone zagon binarja (./portfolio_optimizer brez argumenta) bere ta file; problemske omejitve tedaj padejo na C++ privzetke (main.cpp: K=10, w_min=0.01, w_max=0.95, risk=0.5).",
-
   "common": {
     "population_size": 200,
     "num_generations": 1500,
-    "seed":            42
+    "seed": 42
   },
-
   "pso": {
-    "_ref": "Cura (2009) Nonlinear Analysis — ω₁,ω₂ ~ U[0,2] vzorčeni v pso.cpp, bere se le alpha",
     "alpha": 0.06
   },
-
   "sa": {
-    "_ref": "Crama & Schyns (2003) Eur. J. Operational Research",
-    "alpha":               0.95,
+    "alpha": 0.95,
     "stage_length_factor": 2,
     "initial_accept_prob": 0.8,
-    "stop_stages":         5,
-    "q1":                  0.005,
-    "q2":                  0.001,
-    "q_switch_threshold":  10
-  },
-
-  "ga": {
-    "_ref": "Chang et al. (2000) Computers & Operations Research — steady-state, roulette, uniform crossover",
-    "mutation_rate":   0.01,
-    "mutation_sigma":  0.05
+    "stop_stages": 5,
+    "q1": 0.005,
+    "q2": 0.001,
+    "q_switch_threshold": 10
   }
 }

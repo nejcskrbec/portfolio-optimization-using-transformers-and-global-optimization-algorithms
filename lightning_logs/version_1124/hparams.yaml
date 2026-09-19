@@ -1,4 +1,4 @@
-attention_head_size: 2
+attention_head_size: 1
 categorical_groups: {}
 causal_attention: true
 dataset_parameters:
@@ -11,57 +11,33 @@ dataset_parameters:
       add_nan: false
       classes_:
         AAPL: 0
-        ABT: 1
-        ADBE: 2
-        AMGN: 3
-        AMZN: 4
-        AVGO: 5
-        AXP: 6
-        BA: 7
-        BAC: 8
-        BLK: 9
-        C: 10
-        CAT: 11
-        COP: 12
-        COST: 13
-        CRM: 14
-        CSCO: 15
-        CVX: 16
-        DIS: 17
-        GOOGL: 18
-        GS: 19
-        HD: 20
-        HON: 21
-        IBM: 22
-        INTC: 23
-        JNJ: 24
-        JPM: 25
-        KO: 26
-        LOW: 27
-        MCD: 28
-        MDT: 29
-        META: 30
-        MMM: 31
-        MRK: 32
-        MS: 33
-        MSFT: 34
-        NEE: 35
-        NKE: 36
-        NVDA: 37
-        ORCL: 38
-        PEP: 39
-        PFE: 40
-        PG: 41
-        QCOM: 42
-        TMO: 43
-        TSLA: 44
-        TXN: 45
-        UNH: 46
-        UNP: 47
-        VZ: 48
-        WFC: 49
-        WMT: 50
-        XOM: 51
+        AMGN: 1
+        AXP: 2
+        BA: 3
+        CAT: 4
+        CRM: 5
+        CSCO: 6
+        CVX: 7
+        DIS: 8
+        GS: 9
+        HD: 10
+        HON: 11
+        IBM: 12
+        INTC: 13
+        JNJ: 14
+        JPM: 15
+        KO: 16
+        MCD: 17
+        MMM: 18
+        MRK: 19
+        MSFT: 20
+        NKE: 21
+        PG: 22
+        TRV: 23
+        UNH: 24
+        VZ: 25
+        WBA: 26
+        WMT: 27
       classes_vector_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - &id001 !!python/name:numpy.ndarray ''
@@ -72,10 +48,10 @@ dataset_parameters:
         state: !!python/tuple
         - 1
         - !!python/tuple
-          - 52
+          - 28
         - !!python/object/apply:numpy.dtype
           args:
-          - U5
+          - U4
           - false
           - true
           state: !!python/tuple
@@ -84,86 +60,28 @@ dataset_parameters:
           - null
           - null
           - null
-          - 20
+          - 16
           - 4
           - 8
         - false
         - !!binary |
-          QQAAAEEAAABQAAAATAAAAAAAAABBAAAAQgAAAFQAAAAAAAAAAAAAAEEAAABEAAAAQgAAAEUAAAAA
-          AAAAQQAAAE0AAABHAAAATgAAAAAAAABBAAAATQAAAFoAAABOAAAAAAAAAEEAAABWAAAARwAAAE8A
-          AAAAAAAAQQAAAFgAAABQAAAAAAAAAAAAAABCAAAAQQAAAAAAAAAAAAAAAAAAAEIAAABBAAAAQwAA
-          AAAAAAAAAAAAQgAAAEwAAABLAAAAAAAAAAAAAABDAAAAAAAAAAAAAAAAAAAAAAAAAEMAAABBAAAA
-          VAAAAAAAAAAAAAAAQwAAAE8AAABQAAAAAAAAAAAAAABDAAAATwAAAFMAAABUAAAAAAAAAEMAAABS
-          AAAATQAAAAAAAAAAAAAAQwAAAFMAAABDAAAATwAAAAAAAABDAAAAVgAAAFgAAAAAAAAAAAAAAEQA
-          AABJAAAAUwAAAAAAAAAAAAAARwAAAE8AAABPAAAARwAAAEwAAABHAAAAUwAAAAAAAAAAAAAAAAAA
-          AEgAAABEAAAAAAAAAAAAAAAAAAAASAAAAE8AAABOAAAAAAAAAAAAAABJAAAAQgAAAE0AAAAAAAAA
-          AAAAAEkAAABOAAAAVAAAAEMAAAAAAAAASgAAAE4AAABKAAAAAAAAAAAAAABKAAAAUAAAAE0AAAAA
-          AAAAAAAAAEsAAABPAAAAAAAAAAAAAAAAAAAATAAAAE8AAABXAAAAAAAAAAAAAABNAAAAQwAAAEQA
-          AAAAAAAAAAAAAE0AAABEAAAAVAAAAAAAAAAAAAAATQAAAEUAAABUAAAAQQAAAAAAAABNAAAATQAA
-          AE0AAAAAAAAAAAAAAE0AAABSAAAASwAAAAAAAAAAAAAATQAAAFMAAAAAAAAAAAAAAAAAAABNAAAA
-          UwAAAEYAAABUAAAAAAAAAE4AAABFAAAARQAAAAAAAAAAAAAATgAAAEsAAABFAAAAAAAAAAAAAABO
-          AAAAVgAAAEQAAABBAAAAAAAAAE8AAABSAAAAQwAAAEwAAAAAAAAAUAAAAEUAAABQAAAAAAAAAAAA
-          AABQAAAARgAAAEUAAAAAAAAAAAAAAFAAAABHAAAAAAAAAAAAAAAAAAAAUQAAAEMAAABPAAAATQAA
-          AAAAAABUAAAATQAAAE8AAAAAAAAAAAAAAFQAAABTAAAATAAAAEEAAAAAAAAAVAAAAFgAAABOAAAA
-          AAAAAAAAAABVAAAATgAAAEgAAAAAAAAAAAAAAFUAAABOAAAAUAAAAAAAAAAAAAAAVgAAAFoAAAAA
-          AAAAAAAAAAAAAABXAAAARgAAAEMAAAAAAAAAAAAAAFcAAABNAAAAVAAAAAAAAAAAAAAAWAAAAE8A
-          AABNAAAAAAAAAAAAAAA=
+          QQAAAEEAAABQAAAATAAAAEEAAABNAAAARwAAAE4AAABBAAAAWAAAAFAAAAAAAAAAQgAAAEEAAAAA
+          AAAAAAAAAEMAAABBAAAAVAAAAAAAAABDAAAAUgAAAE0AAAAAAAAAQwAAAFMAAABDAAAATwAAAEMA
+          AABWAAAAWAAAAAAAAABEAAAASQAAAFMAAAAAAAAARwAAAFMAAAAAAAAAAAAAAEgAAABEAAAAAAAA
+          AAAAAABIAAAATwAAAE4AAAAAAAAASQAAAEIAAABNAAAAAAAAAEkAAABOAAAAVAAAAEMAAABKAAAA
+          TgAAAEoAAAAAAAAASgAAAFAAAABNAAAAAAAAAEsAAABPAAAAAAAAAAAAAABNAAAAQwAAAEQAAAAA
+          AAAATQAAAE0AAABNAAAAAAAAAE0AAABSAAAASwAAAAAAAABNAAAAUwAAAEYAAABUAAAATgAAAEsA
+          AABFAAAAAAAAAFAAAABHAAAAAAAAAAAAAABUAAAAUgAAAFYAAAAAAAAAVQAAAE4AAABIAAAAAAAA
+          AFYAAABaAAAAAAAAAAAAAABXAAAAQgAAAEEAAAAAAAAAVwAAAE0AAABUAAAAAAAAAA==
       warn: true
-    ticker: !!python/object:pytorch_forecasting.data.encoders.NaNLabelEncoder
+    day_of_week: !!python/object:pytorch_forecasting.data.encoders.NaNLabelEncoder
       add_nan: false
       classes_: &id006
-        AAPL: 0
-        ABT: 1
-        ADBE: 2
-        AMGN: 3
-        AMZN: 4
-        AVGO: 5
-        AXP: 6
-        BA: 7
-        BAC: 8
-        BLK: 9
-        C: 10
-        CAT: 11
-        COP: 12
-        COST: 13
-        CRM: 14
-        CSCO: 15
-        CVX: 16
-        DIS: 17
-        GOOGL: 18
-        GS: 19
-        HD: 20
-        HON: 21
-        IBM: 22
-        INTC: 23
-        JNJ: 24
-        JPM: 25
-        KO: 26
-        LOW: 27
-        MCD: 28
-        MDT: 29
-        META: 30
-        MMM: 31
-        MRK: 32
-        MS: 33
-        MSFT: 34
-        NEE: 35
-        NKE: 36
-        NVDA: 37
-        ORCL: 38
-        PEP: 39
-        PFE: 40
-        PG: 41
-        QCOM: 42
-        TMO: 43
-        TSLA: 44
-        TXN: 45
-        UNH: 46
-        UNP: 47
-        VZ: 48
-        WFC: 49
-        WMT: 50
-        XOM: 51
+        '0': 0
+        '1': 1
+        '2': 2
+        '3': 3
+        '4': 4
       classes_vector_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -174,10 +92,10 @@ dataset_parameters:
         state: !!python/tuple
         - 1
         - !!python/tuple
-          - 52
+          - 5
         - !!python/object/apply:numpy.dtype
           args:
-          - U5
+          - U1
           - false
           - true
           state: !!python/tuple
@@ -186,40 +104,167 @@ dataset_parameters:
           - null
           - null
           - null
-          - 20
+          - 4
           - 4
           - 8
         - false
         - !!binary |
-          QQAAAEEAAABQAAAATAAAAAAAAABBAAAAQgAAAFQAAAAAAAAAAAAAAEEAAABEAAAAQgAAAEUAAAAA
-          AAAAQQAAAE0AAABHAAAATgAAAAAAAABBAAAATQAAAFoAAABOAAAAAAAAAEEAAABWAAAARwAAAE8A
-          AAAAAAAAQQAAAFgAAABQAAAAAAAAAAAAAABCAAAAQQAAAAAAAAAAAAAAAAAAAEIAAABBAAAAQwAA
-          AAAAAAAAAAAAQgAAAEwAAABLAAAAAAAAAAAAAABDAAAAAAAAAAAAAAAAAAAAAAAAAEMAAABBAAAA
-          VAAAAAAAAAAAAAAAQwAAAE8AAABQAAAAAAAAAAAAAABDAAAATwAAAFMAAABUAAAAAAAAAEMAAABS
-          AAAATQAAAAAAAAAAAAAAQwAAAFMAAABDAAAATwAAAAAAAABDAAAAVgAAAFgAAAAAAAAAAAAAAEQA
-          AABJAAAAUwAAAAAAAAAAAAAARwAAAE8AAABPAAAARwAAAEwAAABHAAAAUwAAAAAAAAAAAAAAAAAA
-          AEgAAABEAAAAAAAAAAAAAAAAAAAASAAAAE8AAABOAAAAAAAAAAAAAABJAAAAQgAAAE0AAAAAAAAA
-          AAAAAEkAAABOAAAAVAAAAEMAAAAAAAAASgAAAE4AAABKAAAAAAAAAAAAAABKAAAAUAAAAE0AAAAA
-          AAAAAAAAAEsAAABPAAAAAAAAAAAAAAAAAAAATAAAAE8AAABXAAAAAAAAAAAAAABNAAAAQwAAAEQA
-          AAAAAAAAAAAAAE0AAABEAAAAVAAAAAAAAAAAAAAATQAAAEUAAABUAAAAQQAAAAAAAABNAAAATQAA
-          AE0AAAAAAAAAAAAAAE0AAABSAAAASwAAAAAAAAAAAAAATQAAAFMAAAAAAAAAAAAAAAAAAABNAAAA
-          UwAAAEYAAABUAAAAAAAAAE4AAABFAAAARQAAAAAAAAAAAAAATgAAAEsAAABFAAAAAAAAAAAAAABO
-          AAAAVgAAAEQAAABBAAAAAAAAAE8AAABSAAAAQwAAAEwAAAAAAAAAUAAAAEUAAABQAAAAAAAAAAAA
-          AABQAAAARgAAAEUAAAAAAAAAAAAAAFAAAABHAAAAAAAAAAAAAAAAAAAAUQAAAEMAAABPAAAATQAA
-          AAAAAABUAAAATQAAAE8AAAAAAAAAAAAAAFQAAABTAAAATAAAAEEAAAAAAAAAVAAAAFgAAABOAAAA
-          AAAAAAAAAABVAAAATgAAAEgAAAAAAAAAAAAAAFUAAABOAAAAUAAAAAAAAAAAAAAAVgAAAFoAAAAA
-          AAAAAAAAAAAAAABXAAAARgAAAEMAAAAAAAAAAAAAAFcAAABNAAAAVAAAAAAAAAAAAAAAWAAAAE8A
-          AABNAAAAAAAAAAAAAAA=
+          MAAAADEAAAAyAAAAMwAAADQAAAA=
+      warn: true
+    month: !!python/object:pytorch_forecasting.data.encoders.NaNLabelEncoder
+      add_nan: false
+      classes_: &id007
+        '1': 0
+        '10': 1
+        '11': 2
+        '12': 3
+        '2': 4
+        '3': 5
+        '4': 6
+        '5': 7
+        '6': 8
+        '7': 9
+        '8': 10
+        '9': 11
+      classes_vector_: !!python/object/apply:numpy.core.multiarray._reconstruct
+        args:
+        - *id001
+        - !!python/tuple
+          - 0
+        - !!binary |
+          Yg==
+        state: !!python/tuple
+        - 1
+        - !!python/tuple
+          - 12
+        - !!python/object/apply:numpy.dtype
+          args:
+          - U2
+          - false
+          - true
+          state: !!python/tuple
+          - 3
+          - <
+          - null
+          - null
+          - null
+          - 8
+          - 4
+          - 8
+        - false
+        - !!binary |
+          MQAAAAAAAAAxAAAAMAAAADEAAAAxAAAAMQAAADIAAAAyAAAAAAAAADMAAAAAAAAANAAAAAAAAAA1
+          AAAAAAAAADYAAAAAAAAANwAAAAAAAAA4AAAAAAAAADkAAAAAAAAA
+      warn: true
+    region: !!python/object:pytorch_forecasting.data.encoders.NaNLabelEncoder
+      add_nan: false
+      classes_: &id008
+        US: 0
+      classes_vector_: !!python/object/apply:numpy.core.multiarray._reconstruct
+        args:
+        - *id001
+        - !!python/tuple
+          - 0
+        - !!binary |
+          Yg==
+        state: !!python/tuple
+        - 1
+        - !!python/tuple
+          - 1
+        - !!python/object/apply:numpy.dtype
+          args:
+          - U2
+          - false
+          - true
+          state: !!python/tuple
+          - 3
+          - <
+          - null
+          - null
+          - null
+          - 8
+          - 4
+          - 8
+        - false
+        - !!binary |
+          VQAAAFMAAAA=
+      warn: true
+    ticker: !!python/object:pytorch_forecasting.data.encoders.NaNLabelEncoder
+      add_nan: false
+      classes_:
+        AAPL: 0
+        AMGN: 1
+        AXP: 2
+        BA: 3
+        CAT: 4
+        CRM: 5
+        CSCO: 6
+        CVX: 7
+        DIS: 8
+        GS: 9
+        HD: 10
+        HON: 11
+        IBM: 12
+        INTC: 13
+        JNJ: 14
+        JPM: 15
+        KO: 16
+        MCD: 17
+        MMM: 18
+        MRK: 19
+        MSFT: 20
+        NKE: 21
+        PG: 22
+        TRV: 23
+        UNH: 24
+        VZ: 25
+        WBA: 26
+        WMT: 27
+      classes_vector_: !!python/object/apply:numpy.core.multiarray._reconstruct
+        args:
+        - *id001
+        - !!python/tuple
+          - 0
+        - !!binary |
+          Yg==
+        state: !!python/tuple
+        - 1
+        - !!python/tuple
+          - 28
+        - !!python/object/apply:numpy.dtype
+          args:
+          - U4
+          - false
+          - true
+          state: !!python/tuple
+          - 3
+          - <
+          - null
+          - null
+          - null
+          - 16
+          - 4
+          - 8
+        - false
+        - !!binary |
+          QQAAAEEAAABQAAAATAAAAEEAAABNAAAARwAAAE4AAABBAAAAWAAAAFAAAAAAAAAAQgAAAEEAAAAA
+          AAAAAAAAAEMAAABBAAAAVAAAAAAAAABDAAAAUgAAAE0AAAAAAAAAQwAAAFMAAABDAAAATwAAAEMA
+          AABWAAAAWAAAAAAAAABEAAAASQAAAFMAAAAAAAAARwAAAFMAAAAAAAAAAAAAAEgAAABEAAAAAAAA
+          AAAAAABIAAAATwAAAE4AAAAAAAAASQAAAEIAAABNAAAAAAAAAEkAAABOAAAAVAAAAEMAAABKAAAA
+          TgAAAEoAAAAAAAAASgAAAFAAAABNAAAAAAAAAEsAAABPAAAAAAAAAAAAAABNAAAAQwAAAEQAAAAA
+          AAAATQAAAE0AAABNAAAAAAAAAE0AAABSAAAASwAAAAAAAABNAAAAUwAAAEYAAABUAAAATgAAAEsA
+          AABFAAAAAAAAAFAAAABHAAAAAAAAAAAAAABUAAAAUgAAAFYAAAAAAAAAVQAAAE4AAABIAAAAAAAA
+          AFYAAABaAAAAAAAAAAAAAABXAAAAQgAAAEEAAAAAAAAAVwAAAE0AAABUAAAAAAAAAA==
       warn: true
   constant_fill_strategy: null
   group_ids:
   - ticker
   lags: null
-  max_encoder_length: 45
-  max_prediction_length: 22
-  min_encoder_length: 22
-  min_prediction_idx: 1
-  min_prediction_length: 1
+  max_encoder_length: 252
+  max_prediction_length: 21
+  min_encoder_length: 126
+  min_prediction_idx: 0
+  min_prediction_length: 21
   predict_mode: false
   randomize_length: null
   scalers:
@@ -298,7 +343,7 @@ dataset_parameters:
         - -1
         - 0
       - !!binary |
-        2XkBAAAAAAA=
+        iCcBAAAAAAA=
       scale_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -362,12 +407,12 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          RAUH3jcSjj8=
+          oTc3GxkThj8=
       n_features_in_: 1
       n_samples_seen_: !!python/object/apply:numpy.core.multiarray.scalar
       - *id004
       - !!binary |
-        2XkBAAAAAAA=
+        iCcBAAAAAAA=
       scale_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -382,7 +427,7 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          Bvqb5hEhsD8=
+          3sWfpZYpsj8=
       var_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -397,7 +442,7 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          ej4jJ2hCcD8=
+          MLhCDv+ddD8=
       with_mean: true
       with_std: true
     relative_time_idx: !!python/object:sklearn.preprocessing._data.StandardScaler
@@ -436,7 +481,7 @@ dataset_parameters:
       n_samples_seen_: !!python/object/apply:numpy.core.multiarray.scalar
       - *id004
       - !!binary |
-        2XkBAAAAAAA=
+        iCcBAAAAAAA=
       scale_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -500,12 +545,12 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          kBy/hCWMRD8=
+          17mtZ8pLOz8=
       n_features_in_: 1
       n_samples_seen_: !!python/object/apply:numpy.core.multiarray.scalar
       - *id004
       - !!binary |
-        2XkBAAAAAAA=
+        iCcBAAAAAAA=
       scale_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -520,7 +565,7 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          iz8UbemyMz8=
+          v9RnSnwPKT8=
       var_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -535,7 +580,7 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          RpUY+rpAeD4=
+          FL+qsjmgYz4=
       with_mean: true
       with_std: true
     ret_scale: !!python/object:sklearn.preprocessing._data.StandardScaler
@@ -569,12 +614,12 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          RSCZzboXjz8=
+          DSz3cenYkj8=
       n_features_in_: 1
       n_samples_seen_: !!python/object/apply:numpy.core.multiarray.scalar
       - *id004
       - !!binary |
-        2XkBAAAAAAA=
+        iCcBAAAAAAA=
       scale_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -589,7 +634,7 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          azYhLzjBcD8=
+          3aw9QIgLcj8=
       var_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -604,7 +649,7 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          irh4uo2L8T4=
+          2l5r4PpZ9D4=
       with_mean: true
       with_std: true
     vol20: !!python/object:sklearn.preprocessing._data.StandardScaler
@@ -638,12 +683,12 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          XeKDGTLfij8=
+          /IrUbq7gjj8=
       n_features_in_: 1
       n_samples_seen_: !!python/object/apply:numpy.core.multiarray.scalar
       - *id004
       - !!binary |
-        2XkBAAAAAAA=
+        iCcBAAAAAAA=
       scale_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -658,7 +703,7 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          QFFs2o9Vez8=
+          K1Nmh5FmhD8=
       var_: !!python/object/apply:numpy.core.multiarray._reconstruct
         args:
         - *id001
@@ -673,14 +718,14 @@ dataset_parameters:
         - *id002
         - false
         - !!binary |
-          h9ZVh0dZBz8=
+          KdMpV/0CGj8=
       with_mean: true
       with_std: true
   static_categoricals:
-  - ticker
+  - region
   static_reals: null
   target: ret
-  target_normalizer: &id007 !!python/object:pytorch_forecasting.data.encoders.GroupNormalizer
+  target_normalizer: &id009 !!python/object:pytorch_forecasting.data.encoders.GroupNormalizer
     _groups:
     - ticker
     _method_kwargs: {}
@@ -690,8 +735,8 @@ dataset_parameters:
     method: standard
     method_kwargs: {}
     missing_:
-      center: 0.0006296664247093494
-      scale: 0.014642599693284847
+      center: 0.0003679198155551184
+      scale: 0.01810381685016927
     norm_: !!python/object:pandas.core.frame.DataFrame
       _flags:
         allows_duplicate_labels: true
@@ -710,25 +755,31 @@ dataset_parameters:
             - 1
             - !!python/tuple
               - 2
-              - 52
-            - *id002
+              - 28
+            - !!python/object/apply:numpy.dtype
+              args:
+              - f8
+              - false
+              - true
+              state: !!python/tuple
+              - 3
+              - <
+              - null
+              - null
+              - null
+              - -1
+              - -1
+              - 0
             - false
             - !!binary |
-              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
+              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
           - !!python/object/apply:builtins.slice
             - 0
             - 2
@@ -747,7 +798,20 @@ dataset_parameters:
               - 1
               - !!python/tuple
                 - 2
-              - *id003
+              - !!python/object/apply:numpy.dtype
+                args:
+                - O8
+                - false
+                - true
+                state: !!python/tuple
+                - 3
+                - '|'
+                - null
+                - null
+                - null
+                - -1
+                - -1
+                - 63
               - false
               - - center
                 - scale
@@ -764,25 +828,36 @@ dataset_parameters:
               state: !!python/tuple
               - 1
               - !!python/tuple
-                - 52
-              - *id004
+                - 28
+              - !!python/object/apply:numpy.dtype
+                args:
+                - i8
+                - false
+                - true
+                state: !!python/tuple
+                - 3
+                - <
+                - null
+                - null
+                - null
+                - -1
+                - -1
+                - 0
               - false
               - !!binary |
                 AAAAAAAAAAABAAAAAAAAAAIAAAAAAAAAAwAAAAAAAAAEAAAAAAAAAAUAAAAAAAAABgAAAAAAAAAH
                 AAAAAAAAAAgAAAAAAAAACQAAAAAAAAAKAAAAAAAAAAsAAAAAAAAADAAAAAAAAAANAAAAAAAAAA4A
                 AAAAAAAADwAAAAAAAAAQAAAAAAAAABEAAAAAAAAAEgAAAAAAAAATAAAAAAAAABQAAAAAAAAAFQAA
-                AAAAAAAWAAAAAAAAABcAAAAAAAAAGAAAAAAAAAAZAAAAAAAAABoAAAAAAAAAGwAAAAAAAAAcAAAA
-                AAAAAB0AAAAAAAAAHgAAAAAAAAAfAAAAAAAAACAAAAAAAAAAIQAAAAAAAAAiAAAAAAAAACMAAAAA
-                AAAAJAAAAAAAAAAlAAAAAAAAACYAAAAAAAAAJwAAAAAAAAAoAAAAAAAAACkAAAAAAAAAKgAAAAAA
-                AAArAAAAAAAAACwAAAAAAAAALQAAAAAAAAAuAAAAAAAAAC8AAAAAAAAAMAAAAAAAAAAxAAAAAAAA
-                ADIAAAAAAAAAMwAAAAAAAAA=
+                AAAAAAAWAAAAAAAAABcAAAAAAAAAGAAAAAAAAAAZAAAAAAAAABoAAAAAAAAAGwAAAAAAAAA=
             name: ticker
       _typ: dataframe
       attrs: {}
     scale_by_group: false
     transformation: null
   time_idx: time_idx
-  time_varying_known_categoricals: null
+  time_varying_known_categoricals:
+  - day_of_week
+  - month
   time_varying_known_reals: null
   time_varying_unknown_categoricals: null
   time_varying_unknown_reals:
@@ -791,41 +866,53 @@ dataset_parameters:
   - vol20
   variable_groups: null
   weight: null
-dropout: 0.1
+dropout: 0.3
 embedding_labels:
-  ticker: *id006
+  day_of_week: *id006
+  month: *id007
+  region: *id008
 embedding_paddings: []
 embedding_sizes:
-  ticker: !!python/tuple
-  - 52
-  - 15
+  day_of_week: !!python/tuple
+  - 5
+  - 4
+  month: !!python/tuple
+  - 12
+  - 6
+  region: !!python/tuple
+  - 1
+  - 1
 hidden_continuous_size: 8
 hidden_continuous_sizes: {}
-hidden_size: 16
-learning_rate: 0.001
+hidden_size: 160
+learning_rate: 0.01
 log_gradient_flow: false
 log_interval: -1
-log_val_interval: null
+log_val_interval: -1
 lstm_layers: 1
 mask_bias: -1000000000.0
-max_encoder_length: 45
+max_encoder_length: 252
 monotone_constraints: {}
 optimizer: adam
 optimizer_params: null
 output_size: 7
-output_transformer: *id007
+output_transformer: *id009
 reduce_on_plateau_min_lr: 1.0e-05
-reduce_on_plateau_patience: 1000
+reduce_on_plateau_patience: 2
 reduce_on_plateau_reduction: 2.0
 share_single_variable_networks: false
 static_categoricals:
-- ticker
+- region
 static_reals:
 - encoder_length
 - ret_center
 - ret_scale
-time_varying_categoricals_decoder: []
-time_varying_categoricals_encoder: []
+time_varying_categoricals_decoder:
+- day_of_week
+- month
+time_varying_categoricals_encoder:
+- day_of_week
+- month
 time_varying_reals_decoder:
 - relative_time_idx
 time_varying_reals_encoder:
@@ -835,7 +922,9 @@ time_varying_reals_encoder:
 - vol20
 weight_decay: 0.0
 x_categoricals:
-- ticker
+- region
+- day_of_week
+- month
 x_reals:
 - encoder_length
 - ret_center

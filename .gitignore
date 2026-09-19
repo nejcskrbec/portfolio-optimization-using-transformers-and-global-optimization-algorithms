@@ -208,3 +208,7 @@ __marimo__/
 
 # macOS
 .DS_Store
+
+archive/
+lightning_logs/
+test_results/
