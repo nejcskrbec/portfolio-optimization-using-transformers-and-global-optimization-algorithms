@@ -1,0 +1,19 @@
+{
+  "common": {
+    "population_size": 200,
+    "num_generations": 1500,
+    "seed": 42
+  },
+  "pso": {
+    "alpha": 0.06
+  },
+  "sa": {
+    "alpha": 0.95,
+    "stage_length_factor": 2,
+    "initial_accept_prob": 0.8,
+    "stop_stages": 5,
+    "q1": 0.005,
+    "q2": 0.001,
+    "q_switch_threshold": 10
+  }
+}

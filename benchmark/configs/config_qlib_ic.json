@@ -1,0 +1,93 @@
+{
+  "_comment": "Config za STANDARDNI ZUNANJI qlib-stil napovedni benchmark (benchmark/run.py predictive). Dnevna presecna evalvacija napovedi na sirokem indeksu S&P 500 (avtorjev snp500.csv iz Wang ICLR2023, 505 clanov, 2018-2021). Porocamo IC, ICIR, RankIC, RankICIR (qlib/MASTER standard) + long-short decilni portfelj (ann. donos, Sharpe) -- natanko protokol, po katerem MASTER/DTML porocajo. Cisto napovedni test, brez CCMV-optimizatorja. Train 2018-2020, test 2021 (leakage-safe: normalizacija le iz train obdobja).",
+  "predictive": {
+    "universe_csv": "data/literature/wang/snp500.csv",
+    "date_column": "Date",
+    "horizon_days": 5,
+    "long_short_decile": 0.1
+  },
+  "test_config": {
+    "windows": 12,
+    "start_date": "2021-01-01",
+    "end_date": "2021-12-29"
+  },
+  "return_estimator": {
+    "return_model": "multistock",
+    "sequence_length": 45,
+    "lstm_hidden": 32,
+    "start_date": "2018-01-02",
+    "end_date": "2020-12-30"
+  },
+  "evaluation": {
+    "estimation_window_days": 0,
+    "master": {
+      "enabled": true,
+      "epochs": 100,
+      "validation_days": 120,
+      "lr": 1e-05,
+      "beta": 5,
+      "seed": 42,
+      "d_model": 256,
+      "t_nhead": 4,
+      "s_nhead": 2,
+      "temporal_dropout": 0.5,
+      "spatial_dropout": 0.5,
+      "train_stop_loss_thred": 0.95,
+      "min_stocks_per_day": 20
+    },
+    "tft": {
+      "enabled": true,
+      "seq_len": 252,
+      "epochs": 100,
+      "patience": 5,
+      "validation_days": 120,
+      "batch_size": 64,
+      "lr": 0.001,
+      "hidden_size": 160,
+      "heads": 1,
+      "dropout": 0.3,
+      "hidden_continuous_size": 8,
+      "gradient_clip_val": 0.01,
+      "seed": 42,
+      "accelerator": "auto",
+      "devices": 1,
+      "inference_device": "auto",
+      "inference_batch_size": 256
+    },
+    "patchtst": {
+      "enabled": true,
+      "seq_len": 336,
+      "epochs": 100,
+      "patience": 10,
+      "validation_days": 120,
+      "batch_size": 4,
+      "lr": 0.0001,
+      "patch_len": 16,
+      "stride": 8,
+      "d_model": 128,
+      "n_heads": 16,
+      "e_layers": 3,
+      "d_ff": 256,
+      "dropout": 0.2,
+      "fc_dropout": 0.2,
+      "head_dropout": 0.0,
+      "attn_dropout": 0.0,
+      "activation": "gelu",
+      "padding_patch": "end",
+      "revin": true,
+      "affine": false,
+      "subtract_last": false,
+      "res_attention": true,
+      "pre_norm": false,
+      "norm": "BatchNorm",
+      "pe": "zeros",
+      "learn_pe": true,
+      "individual": false,
+      "lr_schedule": "TST",
+      "pct_start": 0.2,
+      "seed": 2021,
+      "accelerator": "auto",
+      "inference_device": "auto"
+    }
+  }
+}

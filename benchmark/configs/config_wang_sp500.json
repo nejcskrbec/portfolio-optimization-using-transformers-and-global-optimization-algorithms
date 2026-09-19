@@ -1,0 +1,171 @@
+{
+  "run_tag": "lit_wang_sp500",
+  "output_dir": "test_results/literature/wang_sp500",
+  "literature": {
+    "paper": "Wang, Shen, Chen, Yang, Tao & Yan (2023), ICLR \u2014 Towards One-Shot Neural Combinatorial Solvers (cardinality-constrained portfolio case study)",
+    "comparison_level": "SAME-DATA / SAME-CARDINALITY predict-then-optimize comparison. Uses the authors' own snp500.csv (494 full-history S&P 500 members), the exact train 2018-2020 / test 2021 split, 120-trading-day horizon, K=20, long-only, full investment, rf=3%. Signal + solver are substituted (our MASTER/TFT/PatchTST mu + PSO/SA vs their LSTM mu + Gurobi/CardNN); objective is our mean-variance P-tradeoff, NOT their max-Sharpe. Reported OOS metric is realized annualized Sharpe (mu-rf)/sigma computed Wang-style from daily realized portfolio returns, so it is directly comparable to their Table 3 / Fig 5. NOT an exact-objective replication.",
+    "reference_values": {
+      "history_opt_sharpe": 0.673,
+      "predict_then_opt_lstm_gurobi_sharpe": 1.082,
+      "predict_and_opt_lstm_cardnn_gs_sharpe": 1.968,
+      "cardnn_gs_avg_return": 0.4,
+      "lstm_gurobi_avg_return": 0.241,
+      "history_opt_avg_return": 0.139,
+      "sp500_avg_return": 0.235,
+      "cardnn_gs_avg_risk": 0.188,
+      "lstm_gurobi_avg_risk": 0.195,
+      "history_opt_avg_risk": 0.162,
+      "cardinality_k": 20,
+      "risk_free_annual": 0.03,
+      "horizon_trading_days": 120
+    },
+    "notes": [
+      "FAIRNESS/UNITS: horizon scaling (automatic) scales historical mu AND Sigma by the forecast horizon H so they live on the same H-period scale as the transformers' raw H-day mu. Without it the model mu was inflated ~H-fold against a 1-day Sigma, so the nominal P meant a different risk aversion per model (P'/(1-P')=c*P/(1-P)); PatchTST's weights were then identical at P=0.2/0.5/0.8, i.e. it was solving pure max-return while Historical solved real mean-variance. Scaling both moments is a no-op for the Historical solution (H factors out of the objective), so this repairs units only.",
+      "FAIRNESS/CADENCE: moment_refit=match_models re-estimates the historical mu/Sigma exactly when the models are retrained (model_refit), instead of the previous 'expanding' mode that refreshed the baseline every week while the transformers stayed frozen at fit_end. Both sides now act on the same information set.",
+      "FAIRNESS/RISK-MATCHING: the P grid is widened to 11 points so `python benchmark/run.py risk-matched --dir <output_dir>` can report every model at the P whose REALIZED annualized volatility matches the baseline's. Residual mu-dispersion differences (PatchTST still ~4x Historical after the unit fix) mean an equal-P read is still not an equal-risk read; the risk-matched table is the one to quote.",
+      "FAIRNESS/MU-WINDOW: each model is scored against its OWN matched historical baseline, emitted as a `Historical@<L>` row where L is that model's conditioning window in trading days (L = rows + feature_depth - 1; see the All-Weather config for the derivation). Here MASTER -> Historical@67 (T_LOOKBACK 8 + max(WINDOWS) 60 - 1), TFT -> Historical@271 (seq_len 252 + FEATURE_LOOKBACK 20 - 1) and PatchTST -> Historical@336 (= seq_len). Supersedes the former moment_mu_lookback_periods=252, which pinned ONE baseline at 252 days: that was mismatched against ALL THREE models (-204/+19/-84 days), and most severely against MASTER, which reads 67 days but was compared to a mean over 3.8x more history. The correction reverses MASTER's verdict on this regime -- it now trails its matched baseline (0.75 vs 0.88) where it previously appeared competitive. The matched mu is recomputed at EVERY decision regardless of moment_refit. NB the baselines themselves span 0.88/0.98/1.43 Sharpe at 67/271/336 days, and Historical@336 alone beats the paper's LSTM+Gurobi (1.08): lookback length is doing as much work here as the model choice. Sigma is left expanding and is shared by every mu source, so it cannot tilt the head-to-head.",
+      "UNITS/ANNUALISATION: periods_per_year=2.1 (=252/120). Each stored portfolio return is a 120-trading-day return, so annualising the mean requires 252/120, NOT the 12 implied by decision_step_days=21. The superseded run used 12, inflating annualised return 5.7x (Historical showed 272%) and Sharpe by sqrt(12/2.1)=2.39x; that is the source of the long-standing wang_risk_sweep vs wang_sharpe_table discrepancy.",
+      "CAVEAT/OVERLAP: decision_step_days=21 with forecast_horizon_days=120 means holding periods overlap ~83%. The 7 decisions are roughly 2 independent observations, and wang_sharpe_table shows sharpe_std >= sharpe for EVERY model. This benchmark can support 'same range as their LSTM+Gurobi', never a ranking between our own models."
+    ]
+  },
+  "data": {
+    "source": "csv",
+    "path": "data/literature/wang/snp500.csv",
+    "date_column": "Date",
+    "start_date": "2018-01-02",
+    "end_date": "2021-12-31",
+    "strict_universe": false,
+    "min_observations": 1000
+  },
+  "protocol": {
+    "split_mode": "explicit",
+    "fit_start": "2018-01-02",
+    "fit_end": "2020-12-30",
+    "test_start": "2021-01-01",
+    "test_end": "2021-12-31",
+    "forecast_horizon_days": 120,
+    "model_forecast_horizon_days": 120,
+    "decision_schedule": "nonoverlap_days",
+    "decision_step_days": 21,
+    "return_type": "simple",
+    "moment_frequency": "daily",
+    "moment_start_date": "2018-01-02",
+    "periods_per_year": 2.1,
+    "risk_free_annual": 0.03,
+    "risk_grid": {
+      "type": "P",
+      "values": [
+        0.05,
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.5,
+        0.6,
+        0.7,
+        0.8,
+        0.9,
+        0.95
+      ]
+    },
+    "moment_refit": "match_models",
+    "model_refit": "once",
+    "validation_observations": 120
+  },
+  "portfolio": {
+    "cardinality_K": 20,
+    "w_min": 0.001,
+    "w_max": 0.1
+  },
+  "models": {
+    "master": {
+      "enabled": true,
+      "epochs": 100,
+      "lr": 1e-05,
+      "beta": 5,
+      "seed": 42,
+      "d_model": 256,
+      "t_nhead": 4,
+      "s_nhead": 2,
+      "temporal_dropout": 0.5,
+      "spatial_dropout": 0.5,
+      "min_stocks_per_day": 20,
+      "patience": 10
+    },
+    "tft": {
+      "enabled": true,
+      "seq_len": 252,
+      "epochs": 50,
+      "patience": 5,
+      "batch_size": 64,
+      "lr": 0.001,
+      "hidden_size": 20,
+      "heads": 1,
+      "dropout": 0.3,
+      "hidden_continuous_size": 8,
+      "gradient_clip_val": 0.01,
+      "seed": 42,
+      "accelerator": "mps",
+      "devices": 1,
+      "inference_device": "auto",
+      "inference_batch_size": 256,
+      "loss": "rmse",
+      "early_stopping_metric": "val_loss"
+    },
+    "patchtst": {
+      "enabled": true,
+      "seq_len": 336,
+      "epochs": 100,
+      "patience": 5,
+      "batch_size": 4,
+      "lr": 0.0001,
+      "patch_len": 16,
+      "stride": 8,
+      "d_model": 128,
+      "n_heads": 16,
+      "e_layers": 3,
+      "d_ff": 256,
+      "dropout": 0.2,
+      "fc_dropout": 0.2,
+      "head_dropout": 0.0,
+      "attn_dropout": 0.0,
+      "activation": "gelu",
+      "padding_patch": "end",
+      "revin": true,
+      "affine": false,
+      "subtract_last": false,
+      "res_attention": true,
+      "pre_norm": false,
+      "norm": "BatchNorm",
+      "pe": "zeros",
+      "learn_pe": true,
+      "individual": false,
+      "lr_schedule": "TST",
+      "pct_start": 0.2,
+      "seed": 2021,
+      "accelerator": "mps",
+      "inference_device": "auto",
+      "early_stopping_metric": "val_loss"
+    }
+  },
+  "solvers": {
+    "pso": {
+      "enabled": true
+    },
+    "sa": {
+      "enabled": true
+    }
+  },
+  "run_settings": {
+    "seeds": [
+      42
+    ],
+    "seed_ensemble": false
+  },
+  "smoke": {
+    "max_decisions": 2,
+    "risk_points": [
+      0.5
+    ]
+  }
+}
