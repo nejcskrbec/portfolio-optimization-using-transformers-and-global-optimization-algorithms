@@ -213,5 +213,13 @@ __marimo__/
 # macOS
 .DS_Store
 
+# iCloud/Finder conflict copies ("main.tex 2.bak", "fig/foo 2.pdf", ...).
+# 46 of these had been committed by accident; byte-identical dead weight.
+*\ [0-9].*
+*\ [0-9][0-9].*
+
+# Editor/LaTeX backups
+*.bak
+
 CLAUDE.md
 .claude/

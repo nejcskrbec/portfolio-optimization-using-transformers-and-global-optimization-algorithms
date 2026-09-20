@@ -1,0 +1,6 @@
+[submodule "estimators/master_official"]
+	path = estimators/master_official
+	url = https://github.com/SJTU-DMTai/MASTER.git
+[submodule "estimators/patchtst_official"]
+	path = estimators/patchtst_official
+	url = https://github.com/yuqinie98/PatchTST.git
