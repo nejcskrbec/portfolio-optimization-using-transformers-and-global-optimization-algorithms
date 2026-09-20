@@ -1,0 +1,4 @@
+paper,retrain,model,n_assets,n_trainings,train_sec_mean,train_sec_total
+"Wang, Shen, Chen, Yang, Tao & Yan (2023), ICLR — Towards One-Shot Neural Combinatorial Solvers (cardinality-constrained portfolio case study)",once,MASTER,494,1,2021.45,2021.45
+"Wang, Shen, Chen, Yang, Tao & Yan (2023), ICLR — Towards One-Shot Neural Combinatorial Solvers (cardinality-constrained portfolio case study)",once,PatchTST,494,1,107.8,107.8
+"Wang, Shen, Chen, Yang, Tao & Yan (2023), ICLR — Towards One-Shot Neural Combinatorial Solvers (cardinality-constrained portfolio case study)",once,TFT,494,1,3756.98,3756.98

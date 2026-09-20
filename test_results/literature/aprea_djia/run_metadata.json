@@ -1,0 +1,715 @@
+{
+  "paper": "Aprea & Sbaiz (2025), Decisions in Economics and Finance, https://doi.org/10.1007/s10203-025-00508-x",
+  "comparison_level": "METHOD SUBSTITUTION on the Aprea & Sbaiz DJIA universe (n=28), exact period/schedule. Aprea minimize an aggregate Delta-CoVaR (LSTM-estimated) under ESG/turnover/min-profit constraints; this benchmark keeps the exact-K cardinality mean-variance objective solved by PSO/SA and swaps in MASTER/TFT/PatchTST mu. Not a replication: different objective and constraints, reconstructed public prices. Compared on the shared ex-post metrics (period Sharpe, CAGR).",
+  "notes": [
+    "Fallback when the Cesarone/Refinitiv sustainability ZIP is unavailable.",
+    "Uses the 28-stock DJIA full-history pool aligned with the paper's 31-Dec-2020 investable universe.",
+    "Dates and monthly OOS schedule follow Aprea & Sbaiz: daily panel 2006-10-06..2020-12-31, fit through 2015-12-31, monthly OOS 2016-2020.",
+    "The paper optimizes Delta-CoVaR with PSO. This thesis benchmark retains the exact-K cardinality-constrained mean-variance objective and compares MASTER/TFT/PatchTST through PSO and SA.",
+    "Uses Yahoo Finance auto-adjusted prices for 27 names.",
+    "Yahoo no longer reliably serves WBA after its 2025 delisting; WBA adjusted-close history is overlaid from the CC0 Zenodo dataset DOI 10.5281/zenodo.12566460.",
+    "WBA is the successor to WAG from 2014-12-31; the public WBA history used here includes the predecessor history and therefore preserves the 2006-2020 panel.",
+    "This is still reconstructed public data rather than the paper's Refinitiv/Cesarone file, so it must not be labelled an exact-data replication.",
+    "mu-normalization policy: all models calibrated to historical-return scale (calibrate=true); MASTER is rank-only so all three transformers are compared on equal cross-sectional footing.",
+    "WINDOWS: moment_frequency is 'daily' (Aprea estimate their moments on MONTHLY returns, but they minimize a CoVaR with no Sigma matrix; our substituted mean-variance objective needs a sample Sigma). On monthly sampling the matched Sigma window (longest conditioning window 336 trading days ~ 16 monthly samples) is rank-deficient for the 28-asset covariance; on daily it is 336 samples (12x oversampled) so Sigma is full-rank while mu stays window-matched (MASTER 67d, TFT 271d, PatchTST 336d). The realized period Sharpe/CAGR follow decision_schedule=month_end + periods_per_year=12 and are unaffected by moment_frequency.",
+    "REFIT: Aprea update the in-sample window at EVERY monthly rebalance. Retraining the transformers 59x x 3 seeds is intractable, so model_refit=annual (6 fits) approximates it; moment_refit=match_models keeps Sigma on the same annual cutoffs, and the matched historical mu still rolls every decision (conditioning window, not a refit). Renamed from the obsolete retrain_frequency/covariance_mode/moment_mu_lookback_periods keys.",
+    "PORTFOLIO: exact cardinality_K=10 with w_max=0.20 matches Aprea's u_i=0.20 strategy, under which their optimizer holds ~10 assets (Tables 7-8). The u_i=0.06 strategy (~16 assets) is a separate config if needed. w_min=0.01 (Aprea use l_i=0) is required to define an active position under the cardinality constraint."
+  ],
+  "reference_values": {
+    "dataset_assets": 28,
+    "paper_OOS": "2016-01..2020-12 monthly; T_f=59",
+    "paper_sharpe_is_period_monthly": true,
+    "paper_upper_bounds": [
+      0.06,
+      0.2
+    ],
+    "paper_turnover_constraint": 0.2,
+    "aprea_Bplus_q1_u02": {
+      "sharpe_period": 0.3502,
+      "cagr": 0.2084,
+      "std_period": 0.0501,
+      "max_dd": -0.1749,
+      "diversification_ratio": 1.3775,
+      "turnover": 0.1344,
+      "num_assets": 10
+    }
+  },
+  "ticker_resolution_report": [
+    {
+      "requested_ticker": "MMM",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "AXP",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "AMGN",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "AAPL",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "BA",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "CAT",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "CVX",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "CSCO",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "KO",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "DIS",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "GS",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "HD",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "HON",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "IBM",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "INTC",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "JNJ",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "JPM",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "MCD",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "MRK",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "MSFT",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "NKE",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "PG",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "CRM",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "TRV",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "UNH",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "VZ",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    },
+    {
+      "requested_ticker": "WBA",
+      "initial_problems": [
+        "obs<3400",
+        "nan_after_ffill"
+      ],
+      "status": "resolved",
+      "method": "explicit_series_override",
+      "source": "https://zenodo.org/records/12566460/files/WBA_stock_data.csv?download=1",
+      "observations": 3584,
+      "final_problems": []
+    },
+    {
+      "requested_ticker": "WMT",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 3584
+    }
+  ],
+  "tickers": [
+    "MMM",
+    "AXP",
+    "AMGN",
+    "AAPL",
+    "BA",
+    "CAT",
+    "CVX",
+    "CSCO",
+    "KO",
+    "DIS",
+    "GS",
+    "HD",
+    "HON",
+    "IBM",
+    "INTC",
+    "JNJ",
+    "JPM",
+    "MCD",
+    "MRK",
+    "MSFT",
+    "NKE",
+    "PG",
+    "CRM",
+    "TRV",
+    "UNH",
+    "VZ",
+    "WBA",
+    "WMT"
+  ],
+  "n_assets": 28,
+  "n_decisions": 60,
+  "conditioning_windows": {
+    "Historical@67": 67,
+    "Historical@271": 271,
+    "Historical@336": 336,
+    "MASTER": 67,
+    "TFT": 271,
+    "PatchTST": 336
+  },
+  "matched_baselines": {
+    "MASTER": "Historical@67",
+    "TFT": "Historical@271",
+    "PatchTST": "Historical@336"
+  },
+  "config": {
+    "run_tag": "config_aprea_djia",
+    "output_dir": "test_results/literature/aprea_djia",
+    "literature": {
+      "paper": "Aprea & Sbaiz (2025), Decisions in Economics and Finance, https://doi.org/10.1007/s10203-025-00508-x",
+      "comparison_level": "METHOD SUBSTITUTION on the Aprea & Sbaiz DJIA universe (n=28), exact period/schedule. Aprea minimize an aggregate Delta-CoVaR (LSTM-estimated) under ESG/turnover/min-profit constraints; this benchmark keeps the exact-K cardinality mean-variance objective solved by PSO/SA and swaps in MASTER/TFT/PatchTST mu. Not a replication: different objective and constraints, reconstructed public prices. Compared on the shared ex-post metrics (period Sharpe, CAGR).",
+      "notes": [
+        "Fallback when the Cesarone/Refinitiv sustainability ZIP is unavailable.",
+        "Uses the 28-stock DJIA full-history pool aligned with the paper's 31-Dec-2020 investable universe.",
+        "Dates and monthly OOS schedule follow Aprea & Sbaiz: daily panel 2006-10-06..2020-12-31, fit through 2015-12-31, monthly OOS 2016-2020.",
+        "The paper optimizes Delta-CoVaR with PSO. This thesis benchmark retains the exact-K cardinality-constrained mean-variance objective and compares MASTER/TFT/PatchTST through PSO and SA.",
+        "Uses Yahoo Finance auto-adjusted prices for 27 names.",
+        "Yahoo no longer reliably serves WBA after its 2025 delisting; WBA adjusted-close history is overlaid from the CC0 Zenodo dataset DOI 10.5281/zenodo.12566460.",
+        "WBA is the successor to WAG from 2014-12-31; the public WBA history used here includes the predecessor history and therefore preserves the 2006-2020 panel.",
+        "This is still reconstructed public data rather than the paper's Refinitiv/Cesarone file, so it must not be labelled an exact-data replication.",
+        "mu-normalization policy: all models calibrated to historical-return scale (calibrate=true); MASTER is rank-only so all three transformers are compared on equal cross-sectional footing.",
+        "WINDOWS: moment_frequency is 'daily' (Aprea estimate their moments on MONTHLY returns, but they minimize a CoVaR with no Sigma matrix; our substituted mean-variance objective needs a sample Sigma). On monthly sampling the matched Sigma window (longest conditioning window 336 trading days ~ 16 monthly samples) is rank-deficient for the 28-asset covariance; on daily it is 336 samples (12x oversampled) so Sigma is full-rank while mu stays window-matched (MASTER 67d, TFT 271d, PatchTST 336d). The realized period Sharpe/CAGR follow decision_schedule=month_end + periods_per_year=12 and are unaffected by moment_frequency.",
+        "REFIT: Aprea update the in-sample window at EVERY monthly rebalance. Retraining the transformers 59x x 3 seeds is intractable, so model_refit=annual (6 fits) approximates it; moment_refit=match_models keeps Sigma on the same annual cutoffs, and the matched historical mu still rolls every decision (conditioning window, not a refit). Renamed from the obsolete retrain_frequency/covariance_mode/moment_mu_lookback_periods keys.",
+        "PORTFOLIO: exact cardinality_K=10 with w_max=0.20 matches Aprea's u_i=0.20 strategy, under which their optimizer holds ~10 assets (Tables 7-8). The u_i=0.06 strategy (~16 assets) is a separate config if needed. w_min=0.01 (Aprea use l_i=0) is required to define an active position under the cardinality constraint."
+      ],
+      "reference_values": {
+        "dataset_assets": 28,
+        "paper_OOS": "2016-01..2020-12 monthly; T_f=59",
+        "paper_sharpe_is_period_monthly": true,
+        "paper_upper_bounds": [
+          0.06,
+          0.2
+        ],
+        "paper_turnover_constraint": 0.2,
+        "aprea_Bplus_q1_u02": {
+          "sharpe_period": 0.3502,
+          "cagr": 0.2084,
+          "std_period": 0.0501,
+          "max_dd": -0.1749,
+          "diversification_ratio": 1.3775,
+          "turnover": 0.1344,
+          "num_assets": 10
+        }
+      }
+    },
+    "data": {
+      "source": "yfinance",
+      "tickers": [
+        "MMM",
+        "AXP",
+        "AMGN",
+        "AAPL",
+        "BA",
+        "CAT",
+        "CVX",
+        "CSCO",
+        "KO",
+        "DIS",
+        "GS",
+        "HD",
+        "HON",
+        "IBM",
+        "INTC",
+        "JNJ",
+        "JPM",
+        "MCD",
+        "MRK",
+        "MSFT",
+        "NKE",
+        "PG",
+        "CRM",
+        "TRV",
+        "UNH",
+        "VZ",
+        "WBA",
+        "WMT"
+      ],
+      "expected_assets": 28,
+      "enforce_expected_assets": true,
+      "start_date": "2006-10-06",
+      "end_date": "2020-12-31",
+      "strict_universe": true,
+      "min_observations": 3400,
+      "series_overrides": {
+        "WBA": {
+          "url": "https://zenodo.org/records/12566460/files/WBA_stock_data.csv?download=1",
+          "date_column": "Date",
+          "value_column": "Adj Close"
+        }
+      },
+      "ticker_resolution": {
+        "enabled": true,
+        "registry_path": "benchmark/configs/ticker_alias_registry.json",
+        "cache_path": "data/cache/yfinance_resolver_cache.json",
+        "use_cache": true,
+        "auto_search": true,
+        "write_cache": true,
+        "name_similarity_threshold": 0.82
+      },
+      "asset_names": {
+        "MMM": "3M Company",
+        "AXP": "American Express Company",
+        "AMGN": "Amgen Inc.",
+        "AAPL": "Apple Inc.",
+        "BA": "The Boeing Company",
+        "CAT": "Caterpillar Inc.",
+        "CVX": "Chevron Corporation",
+        "CSCO": "Cisco Systems, Inc.",
+        "KO": "The Coca-Cola Company",
+        "DIS": "The Walt Disney Company",
+        "GS": "The Goldman Sachs Group, Inc.",
+        "HD": "The Home Depot, Inc.",
+        "HON": "Honeywell International Inc.",
+        "IBM": "International Business Machines Corporation",
+        "INTC": "Intel Corporation",
+        "JNJ": "Johnson & Johnson",
+        "JPM": "JPMorgan Chase & Co.",
+        "MCD": "McDonald's Corporation",
+        "MRK": "Merck & Co., Inc.",
+        "MSFT": "Microsoft Corporation",
+        "NKE": "NIKE, Inc.",
+        "PG": "The Procter & Gamble Company",
+        "CRM": "Salesforce, Inc.",
+        "TRV": "The Travelers Companies, Inc.",
+        "UNH": "UnitedHealth Group Incorporated",
+        "VZ": "Verizon Communications Inc.",
+        "WBA": "Walgreens Boots Alliance, Inc.",
+        "WMT": "Walmart Inc."
+      }
+    },
+    "protocol": {
+      "split_mode": "explicit",
+      "fit_start": "2007-01-01",
+      "fit_end": "2015-12-31",
+      "test_start": "2016-01-01",
+      "test_end": "2020-12-31",
+      "forecast_horizon_days": 21,
+      "model_forecast_horizon_days": 21,
+      "decision_schedule": "month_end",
+      "return_type": "log",
+      "moment_frequency": "daily",
+      "moment_start_date": "2007-01-01",
+      "periods_per_year": 12,
+      "risk_grid": {
+        "type": "P",
+        "values": [
+          0.05,
+          0.1,
+          0.2,
+          0.3,
+          0.4,
+          0.5,
+          0.6,
+          0.7,
+          0.8,
+          0.9,
+          0.95
+        ]
+      },
+      "model_refit": "annual",
+      "moment_refit": "match_models",
+      "validation_observations": 126
+    },
+    "portfolio": {
+      "cardinality_K": 10,
+      "w_min": 0.01,
+      "w_max": 0.2
+    },
+    "models": {
+      "master": {
+        "enabled": true,
+        "epochs": 100,
+        "lr": 1e-05,
+        "beta": 5,
+        "seed": 42,
+        "d_model": 256,
+        "t_nhead": 4,
+        "s_nhead": 2,
+        "temporal_dropout": 0.5,
+        "spatial_dropout": 0.5,
+        "min_stocks_per_day": 10,
+        "patience": 10
+      },
+      "tft": {
+        "enabled": true,
+        "seq_len": 252,
+        "epochs": 50,
+        "patience": 5,
+        "batch_size": 64,
+        "lr": 0.001,
+        "hidden_size": 20,
+        "heads": 1,
+        "dropout": 0.3,
+        "hidden_continuous_size": 8,
+        "gradient_clip_val": 0.01,
+        "seed": 42,
+        "accelerator": "mps",
+        "devices": 1,
+        "inference_device": "auto",
+        "inference_batch_size": 256,
+        "loss": "rmse",
+        "early_stopping_metric": "val_loss"
+      },
+      "patchtst": {
+        "enabled": true,
+        "seq_len": 336,
+        "epochs": 100,
+        "patience": 5,
+        "batch_size": 4,
+        "lr": 0.0001,
+        "patch_len": 16,
+        "stride": 8,
+        "d_model": 128,
+        "n_heads": 16,
+        "e_layers": 3,
+        "d_ff": 256,
+        "dropout": 0.2,
+        "fc_dropout": 0.2,
+        "head_dropout": 0.0,
+        "attn_dropout": 0.0,
+        "activation": "gelu",
+        "padding_patch": "end",
+        "revin": true,
+        "affine": false,
+        "subtract_last": false,
+        "res_attention": true,
+        "pre_norm": false,
+        "norm": "BatchNorm",
+        "pe": "zeros",
+        "learn_pe": true,
+        "individual": false,
+        "lr_schedule": "TST",
+        "pct_start": 0.2,
+        "seed": 2021,
+        "accelerator": "mps",
+        "inference_device": "auto",
+        "early_stopping_metric": "val_loss"
+      }
+    },
+    "solvers": {
+      "pso": {
+        "enabled": true
+      },
+      "sa": {
+        "enabled": true
+      }
+    },
+    "run_settings": {
+      "seeds": [
+        42
+      ],
+      "seed_ensemble": false,
+      "max_decisions": null
+    },
+    "smoke": {
+      "max_decisions": 3,
+      "risk_points": [
+        0.8
+      ]
+    },
+    "optimizer_config": {
+      "common": {
+        "population_size": 200,
+        "num_generations": 1500,
+        "seed": 42,
+        "cardinality_K": 10,
+        "w_min": 0.01,
+        "w_max": 0.2,
+        "risk_parameter": 0.5
+      },
+      "pso": {
+        "alpha": 0.06
+      },
+      "sa": {
+        "alpha": 0.95,
+        "stage_length_factor": 2,
+        "initial_accept_prob": 0.8,
+        "stop_stages": 5,
+        "q1": 0.005,
+        "q2": 0.001,
+        "q_switch_threshold": 10
+      }
+    },
+    "_runtime": {
+      "ticker_resolution_report": [
+        {
+          "requested_ticker": "MMM",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "AXP",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "AMGN",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "AAPL",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "BA",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "CAT",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "CVX",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "CSCO",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "KO",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "DIS",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "GS",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "HD",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "HON",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "IBM",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "INTC",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "JNJ",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "JPM",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "MCD",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "MRK",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "MSFT",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "NKE",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "PG",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "CRM",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "TRV",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "UNH",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "VZ",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        },
+        {
+          "requested_ticker": "WBA",
+          "initial_problems": [
+            "obs<3400",
+            "nan_after_ffill"
+          ],
+          "status": "resolved",
+          "method": "explicit_series_override",
+          "source": "https://zenodo.org/records/12566460/files/WBA_stock_data.csv?download=1",
+          "observations": 3584,
+          "final_problems": []
+        },
+        {
+          "requested_ticker": "WMT",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 3584
+        }
+      ]
+    }
+  }
+}

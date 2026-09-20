@@ -1,0 +1,3 @@
+paper,retrain,model,n_assets,n_trainings,train_sec_mean,train_sec_total
+"Leow, Nguyen & Chua (2021), Expert Systems with Applications 179, 115060",per_decision,PatchTST,5,65,16.98,1103.57
+"Leow, Nguyen & Chua (2021), Expert Systems with Applications 179, 115060",per_decision,TFT,5,65,18.59,1208.12

@@ -1,0 +1,1074 @@
+{
+  "paper": "Practical long-term investor scenario (own design)",
+  "comparison_level": "PRACTICAL SCENARIO, not a literature replication. Asks the investor-relevant question: over a long, multi-regime horizon (2011-2024), does the transformer pipeline (model mu + shared/sample Sigma) pay off against the plain historical pipeline (sample-mean mu + sample Sigma) and against a passive S&P 500 buy-and-hold? Diversified large-cap universe, monthly rebalancing with annual retraining, K=20 with a 10% per-name cap. Universe is filtered to full-history survivors (survivorship bias inflates absolute returns for ALL strategies equally; the transformer-vs-historical comparison is relative and largely unaffected, but the index gap should be read as a lower bound).",
+  "notes": [
+    "FAIRNESS/UNITS: horizon scaling (automatic) scales historical mu AND Sigma by H=21 so they match the transformers' raw 21-day mu. Before this fix TFT/PatchTST mu had 69x/92x the cross-sectional dispersion of the historical mu while facing a 1-DAY Sigma, so the risk term was numerically irrelevant and they were effectively running max-return top-K selection inside the w_max box rather than mean-variance. Scaling both moments is a no-op for the Historical/MASTER solutions (H factors out of the objective).",
+    "FAIRNESS/CADENCE: moment_refit=match_models re-estimates historical mu/Sigma on exactly the cutoff the models were last refit on (model_refit=annual), instead of 'expanding' which refreshed the baseline every MONTH while the models refit once a YEAR. On the Leow All-Weather protocol that same asymmetry was worth 4.4 Sharpe points to the baseline.",
+    "FAIRNESS/RISK-MATCHING: P grid widened from a single point to 11 so `python benchmark/run.py risk-matched --dir <output_dir>` can report each model at matched REALIZED volatility. Adds ~1.1h of solver time, no extra training.",
+    "SEEDS: deliberately single-seed (42). With 168 monthly decisions the sampling noise that made the 13-decision Leow protocol a seed lottery is far better averaged; a 5-seed ensemble would multiply a 14-year/61-asset/3-model run by 5 for little gain."
+  ],
+  "reference_values": {
+    "note": "No external anchor; headline metrics are long-term terminal wealth, CAGR, annualized Sharpe and maximum drawdown, plus the equity curve vs SPY."
+  },
+  "ticker_resolution_report": [
+    {
+      "requested_ticker": "AAPL",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "MSFT",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "INTC",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "CSCO",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "ORCL",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "IBM",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "QCOM",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "TXN",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "ADBE",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "HPQ",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "JPM",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "BAC",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "WFC",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "C",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "GS",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "AXP",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "USB",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "MS",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "JNJ",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "PFE",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "MRK",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "ABT",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "AMGN",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "GILD",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "UNH",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "MDT",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "BMY",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "LLY",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "PG",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "KO",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "PEP",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "WMT",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "HD",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "MCD",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "NKE",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "COST",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "LOW",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "TGT",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "SBUX",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "CL",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "GE",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "HON",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "UNP",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "CAT",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "BA",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "MMM",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "UPS",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "LMT",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "EMR",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "XOM",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "CVX",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "COP",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "SLB",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "DUK",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "SO",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "NEE",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "DIS",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "VZ",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "T",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "CMCSA",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    },
+    {
+      "requested_ticker": "GOOGL",
+      "status": "original",
+      "method": "yfinance_requested_symbol",
+      "observations": 5033
+    }
+  ],
+  "tickers": [
+    "AAPL",
+    "MSFT",
+    "INTC",
+    "CSCO",
+    "ORCL",
+    "IBM",
+    "QCOM",
+    "TXN",
+    "ADBE",
+    "HPQ",
+    "JPM",
+    "BAC",
+    "WFC",
+    "C",
+    "GS",
+    "AXP",
+    "USB",
+    "MS",
+    "JNJ",
+    "PFE",
+    "MRK",
+    "ABT",
+    "AMGN",
+    "GILD",
+    "UNH",
+    "MDT",
+    "BMY",
+    "LLY",
+    "PG",
+    "KO",
+    "PEP",
+    "WMT",
+    "HD",
+    "MCD",
+    "NKE",
+    "COST",
+    "LOW",
+    "TGT",
+    "SBUX",
+    "CL",
+    "GE",
+    "HON",
+    "UNP",
+    "CAT",
+    "BA",
+    "MMM",
+    "UPS",
+    "LMT",
+    "EMR",
+    "XOM",
+    "CVX",
+    "COP",
+    "SLB",
+    "DUK",
+    "SO",
+    "NEE",
+    "DIS",
+    "VZ",
+    "T",
+    "CMCSA",
+    "GOOGL"
+  ],
+  "n_assets": 61,
+  "n_decisions": 168,
+  "conditioning_windows": {
+    "Historical@67": 67,
+    "Historical@271": 271,
+    "Historical@336": 336,
+    "MASTER": 67,
+    "TFT": 271,
+    "PatchTST": 336
+  },
+  "matched_baselines": {
+    "MASTER": "Historical@67",
+    "TFT": "Historical@271",
+    "PatchTST": "Historical@336"
+  },
+  "config": {
+    "run_tag": "lit_longterm_investor",
+    "output_dir": "test_results/literature/longterm_investor",
+    "literature": {
+      "paper": "Practical long-term investor scenario (own design)",
+      "comparison_level": "PRACTICAL SCENARIO, not a literature replication. Asks the investor-relevant question: over a long, multi-regime horizon (2011-2024), does the transformer pipeline (model mu + shared/sample Sigma) pay off against the plain historical pipeline (sample-mean mu + sample Sigma) and against a passive S&P 500 buy-and-hold? Diversified large-cap universe, monthly rebalancing with annual retraining, K=20 with a 10% per-name cap. Universe is filtered to full-history survivors (survivorship bias inflates absolute returns for ALL strategies equally; the transformer-vs-historical comparison is relative and largely unaffected, but the index gap should be read as a lower bound).",
+      "reference_values": {
+        "note": "No external anchor; headline metrics are long-term terminal wealth, CAGR, annualized Sharpe and maximum drawdown, plus the equity curve vs SPY."
+      },
+      "notes": [
+        "FAIRNESS/UNITS: horizon scaling (automatic) scales historical mu AND Sigma by H=21 so they match the transformers' raw 21-day mu. Before this fix TFT/PatchTST mu had 69x/92x the cross-sectional dispersion of the historical mu while facing a 1-DAY Sigma, so the risk term was numerically irrelevant and they were effectively running max-return top-K selection inside the w_max box rather than mean-variance. Scaling both moments is a no-op for the Historical/MASTER solutions (H factors out of the objective).",
+        "FAIRNESS/CADENCE: moment_refit=match_models re-estimates historical mu/Sigma on exactly the cutoff the models were last refit on (model_refit=annual), instead of 'expanding' which refreshed the baseline every MONTH while the models refit once a YEAR. On the Leow All-Weather protocol that same asymmetry was worth 4.4 Sharpe points to the baseline.",
+        "FAIRNESS/RISK-MATCHING: P grid widened from a single point to 11 so `python benchmark/run.py risk-matched --dir <output_dir>` can report each model at matched REALIZED volatility. Adds ~1.1h of solver time, no extra training.",
+        "SEEDS: deliberately single-seed (42). With 168 monthly decisions the sampling noise that made the 13-decision Leow protocol a seed lottery is far better averaged; a 5-seed ensemble would multiply a 14-year/61-asset/3-model run by 5 for little gain."
+      ]
+    },
+    "data": {
+      "source": "yfinance",
+      "tickers": [
+        "AAPL",
+        "MSFT",
+        "INTC",
+        "CSCO",
+        "ORCL",
+        "IBM",
+        "QCOM",
+        "TXN",
+        "ADBE",
+        "HPQ",
+        "JPM",
+        "BAC",
+        "WFC",
+        "C",
+        "GS",
+        "AXP",
+        "USB",
+        "MS",
+        "JNJ",
+        "PFE",
+        "MRK",
+        "ABT",
+        "AMGN",
+        "GILD",
+        "UNH",
+        "MDT",
+        "BMY",
+        "LLY",
+        "PG",
+        "KO",
+        "PEP",
+        "WMT",
+        "HD",
+        "MCD",
+        "NKE",
+        "COST",
+        "LOW",
+        "TGT",
+        "SBUX",
+        "CL",
+        "GE",
+        "HON",
+        "UNP",
+        "CAT",
+        "BA",
+        "MMM",
+        "UPS",
+        "LMT",
+        "EMR",
+        "XOM",
+        "CVX",
+        "COP",
+        "SLB",
+        "DUK",
+        "SO",
+        "NEE",
+        "DIS",
+        "VZ",
+        "T",
+        "CMCSA",
+        "GOOGL"
+      ],
+      "start_date": "2005-01-01",
+      "end_date": "2024-12-31",
+      "strict_universe": false,
+      "min_observations": 4600,
+      "ticker_resolution": {
+        "enabled": true,
+        "registry_path": "benchmark/configs/ticker_alias_registry.json",
+        "cache_path": "data/cache/yfinance_resolver_cache.json",
+        "use_cache": true,
+        "auto_search": true,
+        "write_cache": true,
+        "name_similarity_threshold": 0.82
+      }
+    },
+    "protocol": {
+      "split_mode": "explicit",
+      "fit_start": "2005-01-01",
+      "fit_end": "2010-12-31",
+      "test_start": "2011-01-01",
+      "test_end": "2024-12-31",
+      "forecast_horizon_days": 21,
+      "model_forecast_horizon_days": 21,
+      "decision_schedule": "month_end",
+      "return_type": "simple",
+      "moment_frequency": "daily",
+      "moment_start_date": "2005-01-01",
+      "periods_per_year": 12,
+      "risk_free_annual": 0.03,
+      "risk_grid": {
+        "type": "P",
+        "values": [
+          0.05,
+          0.1,
+          0.2,
+          0.3,
+          0.4,
+          0.5,
+          0.6,
+          0.7,
+          0.8,
+          0.9,
+          0.95
+        ]
+      },
+      "model_refit": "annual",
+      "moment_refit": "match_models",
+      "validation_observations": 126
+    },
+    "portfolio": {
+      "cardinality_K": 20,
+      "w_min": 0.01,
+      "w_max": 0.1
+    },
+    "models": {
+      "master": {
+        "enabled": true,
+        "epochs": 100,
+        "lr": 1e-05,
+        "beta": 5,
+        "seed": 42,
+        "d_model": 256,
+        "t_nhead": 4,
+        "s_nhead": 2,
+        "temporal_dropout": 0.5,
+        "spatial_dropout": 0.5,
+        "min_stocks_per_day": 20,
+        "patience": 10
+      },
+      "tft": {
+        "enabled": true,
+        "seq_len": 252,
+        "epochs": 50,
+        "patience": 5,
+        "batch_size": 64,
+        "lr": 0.001,
+        "hidden_size": 20,
+        "heads": 1,
+        "dropout": 0.3,
+        "hidden_continuous_size": 8,
+        "gradient_clip_val": 0.01,
+        "seed": 42,
+        "accelerator": "mps",
+        "devices": 1,
+        "inference_device": "auto",
+        "inference_batch_size": 256
+      },
+      "patchtst": {
+        "enabled": true,
+        "seq_len": 336,
+        "epochs": 100,
+        "patience": 5,
+        "batch_size": 16,
+        "lr": 0.0001,
+        "patch_len": 16,
+        "stride": 8,
+        "d_model": 128,
+        "n_heads": 16,
+        "e_layers": 3,
+        "d_ff": 256,
+        "dropout": 0.2,
+        "fc_dropout": 0.2,
+        "head_dropout": 0.0,
+        "attn_dropout": 0.0,
+        "activation": "gelu",
+        "padding_patch": "end",
+        "revin": true,
+        "affine": false,
+        "subtract_last": false,
+        "res_attention": true,
+        "pre_norm": false,
+        "norm": "BatchNorm",
+        "pe": "zeros",
+        "learn_pe": true,
+        "individual": false,
+        "lr_schedule": "TST",
+        "pct_start": 0.2,
+        "seed": 2021,
+        "accelerator": "mps",
+        "inference_device": "auto"
+      }
+    },
+    "solvers": {
+      "pso": {
+        "enabled": true
+      },
+      "sa": {
+        "enabled": true
+      }
+    },
+    "run_settings": {
+      "seeds": [
+        42
+      ]
+    },
+    "smoke": {
+      "max_decisions": 2,
+      "risk_points": [
+        0.5
+      ]
+    },
+    "optimizer_config": {
+      "common": {
+        "population_size": 200,
+        "num_generations": 1500,
+        "seed": 42,
+        "cardinality_K": 20,
+        "w_min": 0.01,
+        "w_max": 0.1,
+        "risk_parameter": 0.5
+      },
+      "pso": {
+        "alpha": 0.06
+      },
+      "sa": {
+        "alpha": 0.95,
+        "stage_length_factor": 2,
+        "initial_accept_prob": 0.8,
+        "stop_stages": 5,
+        "q1": 0.005,
+        "q2": 0.001,
+        "q_switch_threshold": 10
+      }
+    },
+    "_runtime": {
+      "ticker_resolution_report": [
+        {
+          "requested_ticker": "AAPL",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "MSFT",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "INTC",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "CSCO",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "ORCL",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "IBM",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "QCOM",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "TXN",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "ADBE",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "HPQ",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "JPM",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "BAC",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "WFC",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "C",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "GS",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "AXP",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "USB",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "MS",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "JNJ",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "PFE",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "MRK",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "ABT",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "AMGN",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "GILD",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "UNH",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "MDT",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "BMY",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "LLY",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "PG",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "KO",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "PEP",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "WMT",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "HD",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "MCD",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "NKE",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "COST",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "LOW",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "TGT",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "SBUX",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "CL",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "GE",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "HON",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "UNP",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "CAT",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "BA",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "MMM",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "UPS",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "LMT",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "EMR",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "XOM",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "CVX",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "COP",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "SLB",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "DUK",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "SO",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "NEE",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "DIS",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "VZ",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "T",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "CMCSA",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        },
+        {
+          "requested_ticker": "GOOGL",
+          "status": "original",
+          "method": "yfinance_requested_symbol",
+          "observations": 5033
+        }
+      ]
+    }
+  }
+}

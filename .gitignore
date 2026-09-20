@@ -28,7 +28,11 @@ MANIFEST
 
 archive/
 lightning_logs/
-test_results/
+
+# test_results/ is tracked: it holds the five literature runs the thesis
+# tables are generated from, and losing it once cost a full recovery.
+# Captured stdout is provenance only, and most of it is superseded tuning runs.
+test_results/_run_logs/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

@@ -1,0 +1,4 @@
+paper,retrain,model,n_assets,n_trainings,train_sec_mean,train_sec_total
+"Aprea & Sbaiz (2025), Decisions in Economics and Finance, https://doi.org/10.1007/s10203-025-00508-x",annual,MASTER,28,5,1337.2,6686.02
+"Aprea & Sbaiz (2025), Decisions in Economics and Finance, https://doi.org/10.1007/s10203-025-00508-x",annual,PatchTST,28,5,120.93,604.67
+"Aprea & Sbaiz (2025), Decisions in Economics and Finance, https://doi.org/10.1007/s10203-025-00508-x",annual,TFT,28,5,1513.97,7569.83

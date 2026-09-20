@@ -153,8 +153,7 @@ def _matched(path: Path) -> dict:
     """model -> its `Historical@<L>` row, read from the run's own output.
 
     Prefers the per-decision file, but `matched_baseline` is constant per model
-    and is repeated in the summary, which is the only one of the two that
-    survives in a log-recovered run directory (see recover_utils.py).
+    and is repeated in the summary, so the summary alone is enough.
     """
     f = path / "portfolio_results.csv"
     if not f.exists():
