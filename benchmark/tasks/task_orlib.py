@@ -20,9 +20,10 @@ from benchmark.utils.benchmark_utils import (
 )
 
 
-# OR-Library data loaders moved here from benchmark/core.py; the data-dir path and
-# dataset registry stay in core (their path resolves relative to benchmark/).
-ORLIB_DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "orlib_data")
+# Chang et al. (2000) OR-Library instances: port1-5 (returns/covariances) and
+# portef1-5 (their published unconstrained efficient frontiers, used as the
+# reference the solvers are scored against).
+ORLIB_DATA_DIR = os.path.join(ROOT, "data", "orlib")
 ORLIB_DATASETS = {
     "port1": {"name": "Hang Seng", "N": 31},
     "port2": {"name": "DAX 100",   "N": 85},

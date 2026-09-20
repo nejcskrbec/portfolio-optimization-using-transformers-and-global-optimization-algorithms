@@ -1,6 +1,6 @@
 {
-  "run_tag": "ablation_aw_expanding",
-  "output_dir": "test_results/literature/_ablation_aw_expanding",
+  "run_tag": "leow_allweather",
+  "output_dir": "test_results/literature/leow_allweather_direct",
   "literature": {
     "paper": "Leow, Nguyen & Chua (2021), Expert Systems with Applications 179, 115060",
     "comparison_level": "DIRECT: paper's exact All-Weather ETF universe, exact train/test period, weekly rebalancing, same metrics (cumulative return, annual return, annual vol, max drawdown, Sharpe). Signal is substituted (our return-transformer mu vs their CNBC-tweet FinBERT sentiment), so this is a method-substitution head-to-head, not a signal replication.",
@@ -13,10 +13,13 @@
       "The paper's SPY buy-and-hold, CRB All-Weather and MPT (Max-Sharpe/Min-Vol) benchmarks are reproduced separately (benchmark reproduction script) and validated against Table 6; the engine only produces the transformer/Historical pipeline rows.",
       "Five seeds (1, 7, 21, 42, 100); report mean +/- std across seeds, never a single-seed point value. NB: PatchTST spans -0.93..+3.09 across these seeds at P=0.5/PSO, so any single-seed number for this universe is meaningless.",
       "CAVEAT: 4-month OOS (~17 weekly decisions) over a single COVID crash -> economic/directional read only, no statistical significance; tiny 5-asset / ~350-day-train cross-section stresses the transformers.",
+      "FAIRNESS/CADENCE: model_refit=per_decision + moment_refit=match_models. The transformers are refit at EVERY weekly decision and the historical mu/Sigma are re-estimated on exactly the same cutoff, so neither side has an information advantage. This matters enormously here: with the previous setup (history re-estimated weekly, transformers frozen at fit_end) Historical scored Sharpe +2.39 at P=0.5/PSO, and with both sides frozen it scored -1.99 -- a 4.4-point swing driven purely by who could see the COVID crash. PatchTST moved 0.02 between those two variants, i.e. the old Historical-vs-transformer result was a cadence artifact, not a mu-source result.",
       "FAIRNESS/UNITS: horizon scaling (automatic) scales historical mu AND Sigma by the forecast horizon H so they live on the same H-period scale as the transformers' raw H-day mu. Without it the model mu was inflated ~H-fold against a 1-day Sigma, so the nominal P meant a different risk aversion per model (P'/(1-P')=c*P/(1-P)); PatchTST's weights were then identical at P=0.2/0.5/0.8, i.e. it was solving pure max-return while Historical solved real mean-variance. Scaling both moments is a no-op for the Historical solution (H factors out of the objective), so this repairs units only.",
-      "FAIRNESS/CADENCE: moment_refit=match_models re-estimates the historical mu/Sigma exactly when the models are retrained (model_refit), instead of the previous 'expanding' mode that refreshed the baseline every week while the transformers stayed frozen at fit_end. Both sides now act on the same information set.",
       "FAIRNESS/RISK-MATCHING: the P grid is widened to 11 points so `python benchmark/run.py risk-matched --dir <output_dir>` can report every model at the P whose REALIZED annualized volatility matches the baseline's. Residual mu-dispersion differences (PatchTST still ~4x Historical after the unit fix) mean an equal-P read is still not an equal-risk read; the risk-matched table is the one to quote.",
-      "FAIRNESS/SEEDS: run_settings.seed_ensemble=true averages each model's mu across the 5 seeds before a single optimizer call (Gu-Kelly-Xiu style ensembling), applied uniformly to every model. This replaces reporting a mean +/- std over wildly dispersed single-seed Sharpes."
+      "FAIRNESS/HOLDOUT: models.*.refit_on_full_window=true (default). Chronological early stopping withholds the most recent validation_observations=63 trading days from the model fit, while the historical baseline estimates mu/Sigma on every observation up to the decision date. On THIS protocol the OOS window is only ~64 trading days, so the holdout covered the entire test period: at the 2020-03-27 decision the transformers' parameters had seen nothing after 2019-12-26 while the baseline's 252-day sample contained every crash day. per_decision refitting therefore bought the models zero new information -- the cadence fix was symmetric in schedule but not in information. The two-stage fit (early-stop on the recent holdout to pick the epoch count, then retrain on the full window for exactly that many epochs) closes the gap without giving the models any data the baseline lacks. Costs ~2x training time.",
+      "FAIRNESS/SEEDS: run_settings.seed_ensemble=true averages each model's mu across the 5 seeds before a single optimizer call (Gu-Kelly-Xiu style ensembling), applied uniformly to every model. This replaces reporting a mean +/- std over wildly dispersed single-seed Sharpes.",
+      "FAIRNESS/MU-WINDOW: each model is scored against its OWN matched historical baseline, emitted as a `Historical@<L>` row where L is that model's conditioning window in trading days. L = rows + feature_depth - 1: the network reads `rows` timesteps, but each timestep is a statistic over `feature_depth` days of raw data, so the oldest row reaches feature_depth-1 days further back than seq_len suggests. Here TFT -> Historical@64 (seq_len 45 + FEATURE_LOOKBACK 20 - 1) and PatchTST -> Historical@45 (raw log returns, depth 1, so L = seq_len). The matched mu is recomputed at EVERY decision regardless of moment_refit -- it is a conditioning window, not a refit cadence, and freezing it would reintroduce staleness. Supersedes the former moment_mu_lookback_periods=45, which pinned ONE baseline at 45 days and so was matched to PatchTST but not to TFT. NB the two baselines differ a lot on this regime (Sharpe 1.35 at 45 days vs 0.64 at 64 days), so which baseline a model is compared against moves the verdict as much as the model does; report the matched pair, never a single 'the historical approach' number. Sigma is deliberately NOT matched: walkforward.py hands one cov to every mu source, so its lookback degrades all models identically and cannot tilt the head-to-head.",
+      "DIVERSIFICATION: w_max=0.40. With w_max=1.0 and cardinality_K=5 of 5 assets (non-binding) the CCMV objective produced CORNER solutions -- ~0.96 in a single asset with w_min=0.01 on the rest, effective N ~1.7 assets. All mu sources then agreed on the same single asset in the crash windows (identical top pick in 5/13 All-Weather decisions, bit-identical realized returns), so those decisions carried ZERO discrimination between mu sources and the reported Sharpe gaps reduced to a handful of single-asset calls rather than portfolio construction. w_max now binds (>= 3 assets held), which is also what makes the run comparable to Leow's DIVERSIFIED allocations. Pre-fix results kept in test_results/literature/<dir>__ref_wmax1.0."
     ],
     "reference_values": {
       "paper_train_period": "2018-08 through 2019-12",
@@ -89,13 +92,7 @@
     "strict_universe": true,
     "min_observations": 300,
     "ticker_resolution": {
-      "enabled": true,
-      "registry_path": "benchmark/configs/ticker_alias_registry.json",
-      "cache_path": "data/cache/yfinance_resolver_cache.json",
-      "use_cache": true,
-      "auto_search": true,
-      "write_cache": true,
-      "name_similarity_threshold": 0.82
+      "enabled": true
     }
   },
   "protocol": {
@@ -104,7 +101,6 @@
     "fit_end": "2019-12-31",
     "test_start": "2020-01-02",
     "test_end": "2020-04-03",
-    "validation_observations": 63,
     "forecast_horizon_days": 5,
     "model_forecast_horizon_days": 5,
     "decision_schedule": "nonoverlap_days",
@@ -129,18 +125,19 @@
         0.95
       ]
     },
-    "moment_refit": "per_decision"
+    "model_refit": "per_decision",
+    "moment_refit": "match_models",
+    "validation_observations": 63
   },
   "portfolio": {
     "cardinality_K": 5,
     "w_min": 0.01,
-    "w_max": 1.0
+    "w_max": 0.4
   },
   "models": {
     "master": {
       "enabled": false,
       "epochs": 100,
-      "validation_days": 126,
       "lr": 1e-05,
       "beta": 5,
       "seed": 42,
@@ -154,14 +151,14 @@
     "tft": {
       "enabled": true,
       "seq_len": 45,
-      "epochs": 100,
-      "patience": 10,
+      "epochs": 50,
+      "patience": 8,
       "early_stopping_metric": "val_loss",
-      "validation_days": 63,
       "batch_size": 64,
       "lr": 0.001,
-      "hidden_size": 160,
+      "hidden_size": 20,
       "heads": 1,
+      "loss": "rmse",
       "dropout": 0.3,
       "hidden_continuous_size": 8,
       "gradient_clip_val": 0.01,
@@ -175,19 +172,18 @@
       "enabled": true,
       "seq_len": 45,
       "epochs": 100,
-      "patience": 10,
-      "early_stopping_metric": "ic",
-      "validation_days": 63,
+      "patience": 5,
+      "early_stopping_metric": "val_loss",
       "batch_size": 32,
       "lr": 0.0001,
-      "patch_len": 16,
-      "stride": 8,
-      "d_model": 128,
-      "n_heads": 16,
+      "patch_len": 8,
+      "stride": 1,
+      "d_model": 16,
+      "n_heads": 4,
       "e_layers": 3,
-      "d_ff": 256,
-      "dropout": 0.2,
-      "fc_dropout": 0.2,
+      "d_ff": 128,
+      "dropout": 0.3,
+      "fc_dropout": 0.3,
       "head_dropout": 0.0,
       "attn_dropout": 0.0,
       "activation": "gelu",
@@ -202,7 +198,7 @@
       "learn_pe": true,
       "individual": false,
       "lr_schedule": "TST",
-      "pct_start": 0.2,
+      "pct_start": 0.05,
       "seed": 2021,
       "accelerator": "cpu",
       "inference_device": "auto"

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-generate_tables.py
-==================
+tables_utils.py
+===============
 Reads benchmark result CSVs and writes LaTeX fragments to thesis-paper/generated/.
 
 Run from the repo root:
-    python benchmark/generate_tables.py
+    python benchmark/utils/tables_utils.py
 
 Outputs
 -------
@@ -26,7 +26,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 RESULTS = ROOT / "test_results" / "literature"
 OUT = ROOT / "thesis-paper" / "generated"
 OUT.mkdir(parents=True, exist_ok=True)
@@ -150,8 +150,16 @@ def _train_detail(path: Path) -> dict:
 
 
 def _matched(path: Path) -> dict:
-    """model -> its `Historical@<L>` row, read from the run's own output."""
-    df = pd.read_csv(path / "portfolio_results.csv")
+    """model -> its `Historical@<L>` row, read from the run's own output.
+
+    Prefers the per-decision file, but `matched_baseline` is constant per model
+    and is repeated in the summary, which is the only one of the two that
+    survives in a log-recovered run directory (see recover_utils.py).
+    """
+    f = path / "portfolio_results.csv"
+    if not f.exists():
+        f = path / "portfolio_summary.csv"
+    df = pd.read_csv(f)
     if "matched_baseline" not in df.columns:
         return {}
     return (df[~df["model"].astype(str).str.startswith("Historical@")]

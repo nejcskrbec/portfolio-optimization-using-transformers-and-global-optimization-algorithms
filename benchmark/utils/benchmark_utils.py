@@ -21,14 +21,13 @@ CONFIGS = {
     # paper reports numeric results for (their Tables 4 and 6). The sector-SPDR and
     # diversified-ETF variants were archived on 2026-09-10 (see
     # archive/leow_removed_20260910/).
-    "leow-allweather": CFG / "config_leow_allweather_direct.json",
-    "wang": CFG / "config_wang_sp500.json",
-    "practical": CFG / "config_longterm_investor.json",
+    "leow-allweather": CFG / "leow_allweather.json",
+    "wang": CFG / "wang.json",
+    "practical": CFG / "practical.json",
     # Aprea & Sbaiz (2025) method-substitution benchmark: DJIA (n=28) and
     # NASDAQ-100 (n=54), monthly OOS 2016-2020, K=10 / w_max=0.2 (their u_i=0.2).
-    "aprea-djia": CFG / "config_aprea_djia.json",
-    "aprea-nasdaq": CFG / "config_aprea_nasdaq100.json",
-    # temporary master-only experiment variants
+    "aprea-djia": CFG / "aprea_djia.json",
+    "aprea-nasdaq": CFG / "aprea_nasdaq.json",
 }
 
 

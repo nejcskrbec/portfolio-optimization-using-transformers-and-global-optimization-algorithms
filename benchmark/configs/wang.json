@@ -1,5 +1,5 @@
 {
-  "run_tag": "lit_wang_sp500",
+  "run_tag": "wang",
   "output_dir": "test_results/literature/wang_sp500",
   "literature": {
     "paper": "Wang, Shen, Chen, Yang, Tao & Yan (2023), ICLR \u2014 Towards One-Shot Neural Combinatorial Solvers (cardinality-constrained portfolio case study)",

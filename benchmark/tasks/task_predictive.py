@@ -268,5 +268,5 @@ def task_predictive(argv=None):
         print(f"\n  CSV -> {out}")
         return rows
 
-    return run(str(CFG / "config_qlib_ic.json"))
+    return run(str(CFG / "predictive.json"))
 

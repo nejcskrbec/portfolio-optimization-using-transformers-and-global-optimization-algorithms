@@ -8,7 +8,7 @@ optimizer bridge in portfolio_optimizers/bridge.py; training with the estimators
 
     python -u benchmark/run.py predictive | orlib | leow | wang
                                | practical | literature | all
-                               | wang-risk-sweep | wang-plot | equity-curves
+                               | wang-risk-sweep | equity-curves-all
 """
 from __future__ import annotations
 
@@ -22,9 +22,7 @@ if str(ROOT) not in sys.path:
 
 from benchmark.utils.benchmark_utils import CONFIGS, _dry, _run_named_literature
 from benchmark.utils.plotting_utils import (
-    task_wang_plot, task_equity_curves,
-    task_equity_curves_all, task_metrics_bars, task_wang_bars,
-    task_protocol_timeline,
+    task_equity_curves_all,
     task_pipeline_schema,
     task_protocol_schema,
 )
@@ -33,6 +31,7 @@ from benchmark.tasks.task_orlib import task_orlib
 from benchmark.tasks.task_investor import task_investor
 from benchmark.tasks.task_leow import task_leow
 from benchmark.tasks.task_wang import task_wang, task_wang_sharpe, task_wang_risk_sweep
+from benchmark.tasks.task_aprea import task_aprea_djia, task_aprea_nasdaq
 from benchmark.tasks.task_risk_matched import task_risk_matched
 
 
@@ -43,11 +42,10 @@ def main(argv=None):
     ap.add_argument("benchmark", choices=[
         "predictive", "orlib",
         "leow", "leow-allweather",
-        "wang", "wang-risk-sweep", "wang-plot", "wang-bars", "risk-matched",
+        "wang", "wang-risk-sweep", "risk-matched",
         "aprea-djia", "aprea-nasdaq",
         "practical", "literature", "all",
-        "equity-curves", "equity-curves-all", "metrics-bars", "protocol-timeline",
-        "protocol-schema", "pipeline-schema",
+        "equity-curves-all", "protocol-schema", "pipeline-schema",
     ])
     ap.add_argument("--smoke", action="store_true",
                     help="Short literature run: first seed/few decisions/reduced risk grid.")
@@ -86,6 +84,14 @@ def main(argv=None):
         task_wang(args.smoke, args.dry_run)
         return
 
+    if b == "aprea-djia":
+        task_aprea_djia(args.smoke, args.dry_run)
+        return
+
+    if b == "aprea-nasdaq":
+        task_aprea_nasdaq(args.smoke, args.dry_run)
+        return
+
     if b in CONFIGS:
         _run_named_literature(b, args.smoke, args.dry_run)
         if args.dry_run or args.smoke:
@@ -106,34 +112,9 @@ def main(argv=None):
             task_wang_risk_sweep([])
         return
 
-    if b == "wang-plot":
-        if not _dry("Wang plot", args.dry_run):
-            task_wang_plot([])
-        return
-
-    if b == "wang-bars":
-        if not _dry("Wang bars", args.dry_run):
-            task_wang_bars([])
-        return
-
-    if b == "equity-curves":
-        if not _dry("literature equity curves", args.dry_run):
-            task_equity_curves([])
-        return
-
     if b == "equity-curves-all":
         if not _dry("all-model equity curves", args.dry_run):
             task_equity_curves_all([])
-        return
-
-    if b == "metrics-bars":
-        if not _dry("core metrics bar charts", args.dry_run):
-            task_metrics_bars([])
-        return
-
-    if b == "protocol-timeline":
-        if not _dry("protocol timeline", args.dry_run):
-            task_protocol_timeline([])
         return
 
     if b == "pipeline-schema":

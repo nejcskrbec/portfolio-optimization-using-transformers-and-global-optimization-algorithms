@@ -1,5 +1,5 @@
 {
-  "run_tag": "lit_longterm_investor",
+  "run_tag": "practical",
   "output_dir": "test_results/literature/longterm_investor",
   "literature": {
     "paper": "Practical long-term investor scenario (own design)",
@@ -84,13 +84,7 @@
     "strict_universe": false,
     "min_observations": 4600,
     "ticker_resolution": {
-      "enabled": true,
-      "registry_path": "benchmark/configs/ticker_alias_registry.json",
-      "cache_path": "data/cache/yfinance_resolver_cache.json",
-      "use_cache": true,
-      "auto_search": true,
-      "write_cache": true,
-      "name_similarity_threshold": 0.82
+      "enabled": true
     }
   },
   "protocol": {

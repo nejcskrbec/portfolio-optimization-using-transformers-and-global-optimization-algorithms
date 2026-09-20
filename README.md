@@ -71,12 +71,12 @@ python -u benchmark/run.py leow --smoke      # short real run
 benchmark/              Evaluation harness
   run.py                  Single entry point; wires CLI args to tasks
   walkforward.py          Walk-forward engine (decision/realization windows)
-  tasks/                  One module per benchmark
+  tasks/                  One task_*.py module per benchmark
   utils/                  Shared helpers, data loading, plotting
-  configs/                Benchmark configs + ticker alias registry
-  orlib_data/             OR-Library port1-5 / portef1-5
-  generate_tables.py      Writes thesis-paper/generated/*.tex
-  reopt_from_stored.py    Re-optimize from stored μ/Σ without retraining
+    tables_utils.py         Writes thesis-paper/generated/*.tex
+    reopt_utils.py          Re-optimize from stored μ/Σ without retraining
+  configs/                One config per benchmark, named after it
+                          (wang.json, practical.json, ...)
 
 estimators/             μ (and Σ) estimation
   master_us.py            MASTER on US equities (Alpha158 + market gating)
@@ -92,7 +92,9 @@ portfolio_optimizers/   C++ solvers
   config.json             Solver hyperparameters
   bridge.py               Python <-> binary bridge
 
-data/                   Literature datasets + yfinance resolver cache
+data/                   Benchmark datasets
+  orlib/                  OR-Library port1-5 / portef1-5 (Chang et al. 2000)
+  literature/wang/        S&P 500 prices for the Wang benchmark
 test_results/           Run outputs (gitignored)
 thesis-paper/           LaTeX sources
 ```
@@ -143,17 +145,12 @@ reduced schedule.
 ### Figures and tables
 
 ```bash
-python -u benchmark/run.py equity-curves        # literature equity curves
 python -u benchmark/run.py equity-curves-all    # all-model equity curves
-python -u benchmark/run.py metrics-bars
-python -u benchmark/run.py wang-plot
-python -u benchmark/run.py wang-bars
 python -u benchmark/run.py wang-risk-sweep
-python -u benchmark/run.py protocol-timeline
 python -u benchmark/run.py protocol-schema
 python -u benchmark/run.py pipeline-schema
 
-python benchmark/generate_tables.py             # -> thesis-paper/generated/*.tex
+python benchmark/utils/tables_utils.py          # -> thesis-paper/generated/*.tex
 ```
 
 ### Useful flags
@@ -230,9 +227,16 @@ bash estimators/setup_master_official.sh --regen-patch
 ## Data
 
 Prices are fetched from **Yahoo Finance at runtime**, so full runs need network
-access. Ticker resolution is cached in `data/cache/`. Configs may instead set
-`"source": "csv"` with a `path` to a wide price file — the Wang benchmark uses
-the bundled `data/literature/wang/snp500.csv`.
+access. Configs may instead set `"source": "csv"` with a `path` to a wide price
+file — the Wang benchmark uses the bundled `data/literature/wang/snp500.csv`,
+and OR-Library reads its instances from `data/orlib/`.
+
+Yahoo does not serve every ticker correctly. A config can name a replacement
+series per symbol via `data.series_overrides`, which is how both Aprea runs get
+WBA — delisted in 2025, so Yahoo returns no history for it at all. Because those
+configs also set `strict_universe` and `enforce_expected_assets`, a ticker that
+silently disappears aborts the run instead of quietly shrinking the universe.
+Note that this depends on an external URL being reachable at runtime.
 
 ---
 
@@ -263,4 +267,4 @@ For a full diagnostic of the installation, run `bash setup.sh --check`.
 
 LaTeX sources are in `thesis-paper/` (`main.tex`, built with `latexmk -pdf`).
 Tables under `thesis-paper/generated/` are produced by
-`benchmark/generate_tables.py` — edit the generator, not the generated files.
+`benchmark/utils/tables_utils.py` — edit the generator, not the generated files.

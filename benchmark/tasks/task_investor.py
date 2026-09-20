@@ -28,7 +28,7 @@ def task_investor(argv=None):
     Answers the practical question of the long-term-investor scenario: "If somebody
     had used our pipeline to invest over 2011-2024, would they have benefited?"
 
-    From the stored monthly, non-overlapping walk-forward (config_longterm_investor),
+    From the stored monthly, non-overlapping walk-forward (practical.json),
     it chains realized per-window returns into a long-term wealth path for the best
     transformer pipeline and the classical historical pipeline, NET of transaction
     costs (turnover x cost), and overlays a passive SPY buy-and-hold. It reports the

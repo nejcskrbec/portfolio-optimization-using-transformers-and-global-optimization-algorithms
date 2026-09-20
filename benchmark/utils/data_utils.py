@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """Price data loading: wide CSV files, yfinance download, the trimmed
-missing-ticker resolver (explicit + registry url override), and load_prices."""
+missing-ticker resolver (explicit series overrides), and load_prices."""
 from __future__ import annotations
 
 import copy
-import json
 import math
 import os
 import re
@@ -154,28 +153,6 @@ def _load_series_override(spec: dict, start: str, end: str) -> pd.Series:
     ].dropna()
 
 
-def _json_load_optional(path: Path) -> dict:
-    if not path.exists():
-        return {}
-    try:
-        with open(path, encoding="utf-8") as f:
-            obj = json.load(f)
-        return obj if isinstance(obj, dict) else {}
-    except Exception as e:
-        print(f"[ticker-resolver] warning: cannot read {path}: {e}")
-        return {}
-
-
-def _resolver_path(value: str | None, default: str) -> Path:
-    p = Path(value or default)
-    return p if p.is_absolute() else project_root() / p
-
-
-def _registry_entry(registry: dict, ticker: str) -> dict:
-    entry = registry.get(ticker, {})
-    return entry if isinstance(entry, dict) else {}
-
-
 def _series_on_calendar(s: pd.Series, calendar: pd.DatetimeIndex) -> pd.Series:
     if s is None or len(s) == 0:
         return pd.Series(index=calendar, dtype=float)
@@ -201,20 +178,35 @@ def _resolve_missing_yfinance(
     current: pd.Series,
     config: dict,
     calendar: pd.DatetimeIndex,
-    registry: dict,
     start: str,
     end: str,
     min_obs: int,
 ):
+    """Recover a ticker that yfinance could not serve with adequate coverage.
+
+    The only repair channel is the config's own `series_overrides`, which names
+    an explicit external CSV for a given symbol. Yahoo fails in two ways worth
+    distinguishing, and only the first is caught automatically:
+
+      * Nothing at all -- e.g. WBA, delisted in 2025 after going private, so no
+        2006-2020 history is served. `_coverage_problems` flags it and the
+        override supplies the series. Both Aprea configs do exactly this.
+      * Valid-looking but silently truncated -- e.g. DOW starts at the Apr 2019
+        spin-off, with earlier history under the old DOW and DWDP symbols.
+        Nothing detects this: the data is internally consistent and passes the
+        coverage check whenever the requested window begins after the break.
+        Before adding a ticker with a merger/spin-off/rename in its past, verify
+        the returned range covers the full window, and add a `series_overrides`
+        entry if it does not.
+    """
     dcfg = config["data"]
-    rcfg = dcfg.get("ticker_resolution", {})
     report = {
         "requested_ticker": requested,
         "initial_problems": _coverage_problems(current, min_obs),
         "status": "unresolved",
     }
 
-    # 0) Explicit external series override is trusted and deterministic.
+    # Explicit external series override is trusted and deterministic.
     override = dcfg.get("series_overrides", {}).get(requested)
     if override:
         try:
@@ -230,25 +222,6 @@ def _resolve_missing_yfinance(
             report["override_problems"] = _coverage_problems(s, min_obs)
         except Exception as e:
             report["override_error"] = str(e)
-
-    # 0.5) Registry-level url_override — centralised fallback for known
-    #      delistings/reconstructions shared across all configs.
-    reg_entry_for_override = _registry_entry(registry, requested)
-    url_override = reg_entry_for_override.get("url_override")
-    if url_override:
-        try:
-            raw = _load_series_override(url_override, start, end)
-            s = _series_on_calendar(raw, calendar)
-            if not _coverage_problems(s, min_obs):
-                report.update({
-                    "status": "resolved",
-                    "method": "registry_url_override",
-                    "source": url_override.get("url") or url_override.get("path"),
-                })
-                return s, report
-            report["registry_url_override_problems"] = _coverage_problems(s, min_obs)
-        except Exception as e:
-            report["registry_url_override_error"] = str(e)
 
     return current, report
 
@@ -295,11 +268,6 @@ def load_prices(config: dict) -> tuple[pd.DataFrame, list[str]]:
 
         rcfg = dcfg.get("ticker_resolution", {})
         resolver_enabled = bool(rcfg.get("enabled", True))
-        registry_path = _resolver_path(
-            rcfg.get("registry_path"),
-            "benchmark/configs/ticker_alias_registry.json",
-        )
-        registry = _json_load_optional(registry_path)
 
         for ticker in tickers:
             current = (
@@ -329,14 +297,13 @@ def load_prices(config: dict) -> tuple[pd.DataFrame, list[str]]:
 
             print(
                 f"[ticker-resolver] {ticker}: {', '.join(problems)} -> "
-                "trying explicit override / registry url-override"
+                "trying explicit series override"
             )
             resolved, report = _resolve_missing_yfinance(
                 ticker,
                 current=current,
                 config=config,
                 calendar=close.index,
-                registry=registry,
                 start=start,
                 end=end,
                 min_obs=min_obs,

@@ -9,8 +9,8 @@ Overwrites portfolio_results.csv / portfolio_summary.csv / aggregate_summary.csv
 estimator_vs_historical.csv; prediction_results.csv is unchanged.
 
 Usage:
-    python benchmark/reopt_from_stored.py benchmark/configs/config_wang_sp500.json
-    python benchmark/reopt_from_stored.py benchmark/configs/config_leow_allweather_direct.json
+    python benchmark/utils/reopt_utils.py benchmark/configs/wang.json
+    python benchmark/utils/reopt_utils.py benchmark/configs/leow_allweather.json
 """
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 

@@ -1,5 +1,5 @@
 {
-  "run_tag": "config_aprea_djia",
+  "run_tag": "aprea_djia",
   "output_dir": "test_results/literature/aprea_djia",
   "literature": {
     "paper": "Aprea & Sbaiz (2025), Decisions in Economics and Finance, https://doi.org/10.1007/s10203-025-00508-x",
@@ -84,13 +84,7 @@
       }
     },
     "ticker_resolution": {
-      "enabled": true,
-      "registry_path": "benchmark/configs/ticker_alias_registry.json",
-      "cache_path": "data/cache/yfinance_resolver_cache.json",
-      "use_cache": true,
-      "auto_search": true,
-      "write_cache": true,
-      "name_similarity_threshold": 0.82
+      "enabled": true
     },
     "asset_names": {
       "MMM": "3M Company",
