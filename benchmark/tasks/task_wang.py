@@ -236,7 +236,7 @@ def task_wang_risk_sweep(argv=None):
 
     def _base_config(K: int, w_min: float, w_max: float) -> dict:
         with open(project_root() / "portfolio_optimizers" / "config.json") as f:
-            solver = json.load(f)  # flat: common, pso, sa, ga
+            solver = json.load(f)  # flat: common, pso, sa
         solver["common"].update({"cardinality_K": K, "w_min": w_min, "w_max": w_max})
         return {"optimizer_config": solver, "run_settings": {}}
 

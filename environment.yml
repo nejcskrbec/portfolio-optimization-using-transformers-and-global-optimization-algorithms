@@ -1,0 +1,30 @@
+# Conda environment for the thesis pipeline.
+#
+#   conda env create -f environment.yml      # first time
+#   conda env update -f environment.yml --prune
+#
+# Pinned to the versions the reported results were produced with.
+#
+# NOTE: torchvision is deliberately ABSENT. pytorch-forecasting imports fine
+# without it, but an incompatible torchvision breaks `import pytorch_forecasting`
+# at load time. Do not add it "for completeness".
+name: magistrska
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+      - torch==2.12.0
+      - pytorch-forecasting==1.8.0
+      - pytorch-lightning==2.5.2
+      - lightning==2.6.5
+      - numpy==1.26.4          # <2.0 on purpose: pytorch-forecasting 1.8 is not numpy-2 clean
+      - pandas==2.3.2
+      - scipy==1.15.3
+      - scikit-learn==1.7.2
+      - matplotlib==3.10.6
+      - yfinance==0.2.66       # price data is fetched at runtime; needs network
+      - tqdm

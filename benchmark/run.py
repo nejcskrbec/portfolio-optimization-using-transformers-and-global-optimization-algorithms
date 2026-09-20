@@ -60,6 +60,9 @@ def main(argv=None):
                     help="Run output directory (risk-matched).")
     ap.add_argument("--target-P", type=float, default=0.5,
                     help="Reference risk point for the risk-matched comparison.")
+    ap.add_argument("--lang", choices=["sl", "en"], default="sl",
+                    help="Label language for pipeline-schema (sl -> "
+                         "thesis-paper/fig/pipeline.pdf, en -> docs/pipeline.png).")
     args = ap.parse_args(argv)
 
     b = args.benchmark
@@ -134,8 +137,8 @@ def main(argv=None):
         return
 
     if b == "pipeline-schema":
-        if not _dry("pipeline schema", args.dry_run):
-            task_pipeline_schema([])
+        if not _dry(f"pipeline schema ({args.lang})", args.dry_run):
+            task_pipeline_schema(["--lang", args.lang])
         return
 
     if b == "protocol-schema":

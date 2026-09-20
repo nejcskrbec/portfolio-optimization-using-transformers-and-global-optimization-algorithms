@@ -57,7 +57,7 @@ def task_wang_plot(argv=None):
 
     def _base_config(K: int, w_min: float, w_max: float) -> dict:
         with open(os.path.join(ROOT, "portfolio_optimizers", "config.json")) as f:
-            solver = json.load(f)  # flat: common, pso, sa, ga
+            solver = json.load(f)  # flat: common, pso, sa
         solver["common"].update({"cardinality_K": K, "w_min": w_min, "w_max": w_max})
         return {"optimizer_config": solver, "run_settings": {}}
 
@@ -887,14 +887,56 @@ def task_pipeline_schema(argv=None):
     branch (sample covariance) run in parallel off the same history, meet in the
     CCMV solver, and the realised return of the held portfolio feeds the
     out-of-sample metrics before the window advances.
+
+    Two language variants share this one drawing routine:
+
+      --lang sl  -> thesis-paper/fig/pipeline.pdf  (vector, for the thesis body)
+      --lang en  -> docs/pipeline.png              (raster, embedded in README)
+
+    The README needs a raster because GitHub does not render PDF inline.
     """
+    import argparse
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
 
-    FIGDIR = os.path.join(ROOT, "thesis-paper", "fig")
-    os.makedirs(FIGDIR, exist_ok=True)
+    ap = argparse.ArgumentParser(prog="pipeline-schema")
+    ap.add_argument("--lang", choices=["sl", "en"], default="sl")
+    ap.add_argument("--out", default=None, help="Override the output path.")
+    args = ap.parse_args(argv or [])
+
+    # Only the text differs between variants; geometry is shared.
+    TEXT = {
+        "sl": {
+            "data":  "Zgodovinski\ntržni podatki\ndo $t$",
+            "mu":    "Napovedni model\n(PatchTST / TFT / MASTER)",
+            "cov":   "Ocena kovariančne\nmatrike",
+            "opt":   "Optimizator KONP\n(RD / SO)",
+            "hold":  "Držanje portfelja\n$[t{+}1,\\,t{+}H]$",
+            "eval":  "Zunajvzorčne mere\nuspešnosti",
+            "ret":   "realizirani donos",
+            "loop":  r"pomik okna: $t \leftarrow t+H$",
+        },
+        "en": {
+            "data":  "Historical\nmarket data\nup to $t$",
+            "mu":    "Forecasting model\n(PatchTST / TFT / MASTER)",
+            "cov":   "Covariance matrix\nestimate",
+            "opt":   "CCMV optimizer\n(PSO / SA)",
+            "hold":  "Hold portfolio\n$[t{+}1,\\,t{+}H]$",
+            "eval":  "Out-of-sample\nperformance metrics",
+            "ret":   "realised return",
+            "loop":  r"window advances: $t \leftarrow t+H$",
+        },
+    }[args.lang]
+
+    if args.out:
+        outpath = args.out if os.path.isabs(args.out) else os.path.join(ROOT, args.out)
+    elif args.lang == "en":
+        outpath = os.path.join(ROOT, "docs", "pipeline.png")
+    else:
+        outpath = os.path.join(ROOT, "thesis-paper", "fig", "pipeline.pdf")
+    os.makedirs(os.path.dirname(outpath), exist_ok=True)
 
     C_DATA, C_MU, C_COV, C_OPT, C_HOLD, C_EVAL = (
         "0.45", "tab:blue", "tab:purple", "tab:red", "tab:orange", "tab:green")
@@ -903,12 +945,12 @@ def task_pipeline_schema(argv=None):
 
     # (x0, y0, x1, y1, roman, label, colour)
     boxes = [
-        (1, 20, 18, 34, "I", "Zgodovinski\ntržni podatki\ndo $t$", C_DATA),
-        (26, 37, 48, 51, "II", "Napovedni model\n(PatchTST / TFT / MASTER)", C_MU),
-        (26, 3, 48, 17, "III", "Ocena kovariančne\nmatrike", C_COV),
-        (56, 20, 72, 34, "IV", "Optimizator KONP\n(RD / SO)", C_OPT),
-        (80, 20, 99, 34, "V", "Držanje portfelja\n$[t{+}1,\\,t{+}H]$", C_HOLD),
-        (80, 3, 99, 17, "VI", "Zunajvzorčne mere\nuspešnosti", C_EVAL),
+        (1, 20, 18, 34, "I", TEXT["data"], C_DATA),
+        (26, 37, 48, 51, "II", TEXT["mu"], C_MU),
+        (26, 3, 48, 17, "III", TEXT["cov"], C_COV),
+        (56, 20, 72, 34, "IV", TEXT["opt"], C_OPT),
+        (80, 20, 99, 34, "V", TEXT["hold"], C_HOLD),
+        (80, 3, 99, 17, "VI", TEXT["eval"], C_EVAL),
     ]
     for x0, y0, x1, y1, roman, label, col in boxes:
         ax.add_patch(FancyBboxPatch(
@@ -939,7 +981,7 @@ def task_pipeline_schema(argv=None):
     arrow((56, 30), (48, 44), r"$\hat{\vec{\mu}}_t$", 52.0, 40.0, rad=0.12)
     arrow((56, 24), (48, 10), r"$\hat{\vec{\Sigma}}_t$", 52.0, 14.0, rad=-0.12)
     arrow((80, 27), (72, 27), r"$\vec{w}_t$", 76.0, 30.5)
-    arrow((89.5, 17), (89.5, 20), "realizirani donos", 87.5, 18.5, ha="right")
+    arrow((89.5, 17), (89.5, 20), TEXT["ret"], 87.5, 18.5, ha="right")
 
     # Walk-forward loop: the window advances and the cycle repeats.
     Y_LOOP = 58.0
@@ -948,7 +990,7 @@ def task_pipeline_schema(argv=None):
     ax.add_patch(FancyArrowPatch(
         (9.5, Y_LOOP), (9.5, 34), arrowstyle="-|>", mutation_scale=9, lw=0.9,
         color="0.45", linestyle=(0, (4, 2)), shrinkA=0, shrinkB=0, zorder=1))
-    ax.text(49.5, Y_LOOP, r"pomik okna: $t \leftarrow t+H$", ha="center",
+    ax.text(49.5, Y_LOOP, TEXT["loop"], ha="center",
             va="center", fontsize=7.0, color="0.35", style="italic",
             bbox=dict(boxstyle="round,pad=0.18", fc="white", ec="none"), zorder=5)
 
@@ -956,9 +998,12 @@ def task_pipeline_schema(argv=None):
     ax.set_ylim(0, 62)
     ax.set_axis_off()
     fig.tight_layout(pad=0.2)
-    fig.savefig(os.path.join(FIGDIR, "pipeline.pdf"), bbox_inches="tight")
+    save_kw = {"bbox_inches": "tight"}
+    if outpath.endswith(".png"):
+        save_kw["dpi"] = 200
+    fig.savefig(outpath, **save_kw)
     plt.close(fig)
-    print("written: pipeline.pdf")
+    print(f"written: {os.path.relpath(outpath, ROOT)}")
 
 
 def task_protocol_schema(argv=None):

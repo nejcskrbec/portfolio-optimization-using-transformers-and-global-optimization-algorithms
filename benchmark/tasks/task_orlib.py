@@ -136,15 +136,13 @@ def task_orlib(argv=None):
     DATASETS = ORLIB_DATASETS
     DATA_DIR = ORLIB_DATA_DIR
 
-    # Current tree ships PSO + SA as the active bridge solvers (literature_benchmark
-    # supports exactly these two); the old benchmark_core.METAHEURISTICS list is gone.
+    # The tree ships PSO + SA; bridge.run_optimizer accepts exactly these two.
     METAHEURISTICS = ["pso", "sa"]
 
     # Style map (previously imported from the deleted benchmark_report.ALGO_STYLE).
     ALGO_STYLE = {
         "pso": {"color": "tab:red",   "label": "PSO"},
         "sa":  {"color": "tab:green", "label": "SA"},
-        "ga":  {"color": "tab:blue",  "label": "GA"},
     }
 
     RESULTS_DIR = os.path.join(ROOT, "test_results")
@@ -160,7 +158,7 @@ def task_orlib(argv=None):
         populacija/generacije/seed) iz portfolio_optimizers/config.json; problemske
         omejitve (K, w_min, w_max) nastavi ta benchmark sam na Chang-ove standarde."""
         with open(os.path.join(ROOT, "portfolio_optimizers", "config.json")) as f:
-            solver = json.load(f)   # flat: common, pso, sa, ga
+            solver = json.load(f)   # flat: common, pso, sa
         solver["common"].update({"population_size": pop, "num_generations": gen,
                                  "cardinality_K": K, "w_min": w_min, "w_max": w_max,
                                  "seed": seed})
