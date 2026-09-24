@@ -20,6 +20,12 @@
 \input{generated/leow_macros.tex}
 \input{generated/wang_macros.tex}
 
+%% Enotna višina grafov in ilustracij. Široki shematski sliki
+%% (pipeline, protocol_schema) sta izvzeti, ker bi pri tej višini
+%% presegli širino stavka.
+\newlength{\figheight}
+\setlength{\figheight}{150pt}
+
 % Vsak razdelek se začne na svoji strani. titlesec vstavi \sectionbreak pred
 % vsak naslov razdelka; \clearpage pred tem izprazni tudi čakajoče plavajoče
 % objekte, da ti ne zaidejo v naslednji razdelek.
@@ -48,9 +54,9 @@
 \keywords[english]{Portfolio optimization, Cardinality constraint, Transformers, Return forecasting, Metaheuristics, Particle swarm optimization}
 
 % Provide a link (or links) to the repository where your data and code is published. If no code was produced, comment out this section.
-%\repository{https://github.com/nejcskrbec/portfolio-optimization}
+\repository{https://github.com/nejcskrbec/portfolio-optimization-using-transformers-and-global-optimization-algorithms}
 
-\sloabstract{V magistrskem delu obravnavamo kardinalno omejeno optimizacijo naložbenih portfeljev, pri kateri sta ključna izziva ocenjevanje pričakovanih donosov in iskanje optimalnih uteži ob zahtevi, da portfelj vsebuje natanko $K$ aktivnih pozicij. Pričakovane donose ocenjujemo s tremi arhitekturno različnimi transformerskimi modeli (MASTER, TFT in PatchTST), katerih nevronska jedra povzamemo po uradnih izvedbah avtorjev. Kovariančno matriko pri vseh pristopih ocenimo enako iz zgodovinskih donosov, zato primerjava izolira vpliv napovednega signala. Uteži nato optimiziramo z rojenjem delcev in simuliranim ohlajanjem. Oba dela cevovoda najprej ovrednotimo ločeno, celoten cevovod pa s postopnim testiranjem zunaj vzorca na protokolih treh objavljenih študij in v dolgoročnem scenariju vlagatelja. V vseh petih preizkusih vsaj en transformerski model preseže svojo ujemajočo zgodovinsko osnovno linijo, vendar se model, ki to doseže, menja z univerzumom sredstev in protokolom: PatchTST je najuspešnejši v dolgoročnem scenariju (Sharpov količnik $1{,}38$ proti $1{,}10$) in na naboru DJIA, MASTER na naboru NASDAQ~100 ($1{,}23$ proti $1{,}03$), TFT pa v kriznem obdobju. Razlike med optimizatorjema so majhne in nekonsistentne, kar kaže, da je kakovost ocene pričakovanih donosov prevladujoči dejavnik uspešnosti portfelja.}
+\sloabstract{V magistrskem delu obravnavamo kardinalno omejeno optimizacijo naložbenih portfeljev, pri kateri sta ključna izziva ocenjevanje pričakovanih donosov in iskanje optimalnih uteži ob zahtevi, da portfelj vsebuje natanko $K$ aktivnih pozicij. Pričakovane donose ocenjujemo s tremi arhitekturno različnimi transformerskimi modeli (MASTER, TFT in PatchTST), katerih nevronska jedra povzamemo po uradnih izvedbah avtorjev. Kovariančno matriko pri vseh pristopih ocenimo enako iz zgodovinskih donosov, zato primerjava izolira vpliv napovednega signala. Uteži nato optimiziramo z rojenjem delcev in simuliranim ohlajanjem. Oba dela cevovoda najprej ovrednotimo ločeno, celoten cevovod pa s postopnim testiranjem zunaj vzorca na protokolih treh objavljenih študij in v dolgoročnem scenariju vlagatelja. V vseh petih preizkusih vsaj en transformerski model preseže svojo ujemajočo zgodovinsko osnovno linijo, vendar se model, ki to doseže, menja z univerzumom sredstev in protokolom: PatchTST je najuspešnejši v dolgoročnem scenariju in na naboru DJIA, MASTER na naboru NASDAQ~100, TFT pa v kriznem obdobju.}
 
 \engabstract{This thesis studies cardinality-constrained portfolio optimization, where the two central challenges are estimating expected returns and finding optimal weights subject to the requirement that the portfolio holds exactly $K$ active positions. Expected returns are estimated with three architecturally distinct transformer models (MASTER, TFT and PatchTST), whose neural cores follow the authors' official implementations; our own modifications are restricted to the data interface and to converting the model output into an expected-return estimate. The covariance matrix is estimated identically from historical returns for all approaches, so the comparison isolates the effect of the forecasting signal. Portfolio weights are then optimized with particle swarm optimization and simulated annealing. The forecasting and optimization stages are first evaluated separately, the former with cross-sectional forecasting measures and the latter on the standard OR-Library instances. The complete pipeline is then tested out of sample with walk-forward evaluation on the protocols of three published studies and in an additional long-term investor scenario. In all five experiments at least one transformer clearly beats its matched historical baseline, but which model does so changes systematically with the asset universe and the protocol: PatchTST is strongest in the long-term scenario (Sharpe ratio $1{,}38$ against $1{,}10$ for its baseline) and on DJIA, MASTER on NASDAQ~100 ($1{,}23$ against $1{,}03$), and TFT in the crisis period. Differences between the two optimizers are small and inconsistent, indicating that the quality of the expected-return estimate is the dominant driver of portfolio performance.}
 
@@ -90,7 +96,7 @@ r_{i,t}^{(H)}
 \right)-1.
 \end{equation}
 
-To zvezo bomo uporabili tudi pri napovednih modelih, kjer bo zaporedje napovedanih dnevnih logaritemskih donosov postalo ena sama ocena pričakovanega donosa na izbranem obzorju.
+To zvezo bomo uporabili tudi pri napovednih modelih, kjer bo zaporedje napovedanih dnevnih logaritemskih donosov $\tilde r_{i,t+h}$ postalo ena sama ocena pričakovanega donosa $r_{i,t}^{(H)}$ na izbranem obzorju.
 
 Donose vseh sredstev v času $t$ zberemo v vektor $\vec{r}_t=(r_{1,t},\dots,r_{N,t})^{\top}$. Portfelj opišemo z vektorjem uteži $\vec{w}=(w_1,\dots,w_N)^{\top}$, kjer $w_i$ predstavlja delež kapitala, vloženega v sredstvo $i$. Donos portfelja je
 
@@ -120,7 +126,7 @@ Klasično izhodišče za reševanje ONP predstavlja Markowitzev model~\cite{mark
 
 V praksi točnih vrednosti $\vec{\mu}$ in $\vec{\Sigma}$ ne poznamo, zato uporabljamo njuni oceni $\hat{\vec{\mu}}$ in $\hat{\vec{\Sigma}}$. Najpreprosteje ju ocenimo iz zgodovinskih donosov, vendar se pričakovani donosi, tveganje in povezave med sredstvi skozi čas spreminjajo. Nenatančne vhodne ocene zato vodijo do neugodnega portfelja tudi takrat, ko je optimizacijski postopek izveden pravilno.
 
-V tej nalogi klasični ONP razširimo z omejitvami, ki bolje odražajo praktične zahteve pri sestavi portfelja. Najpomembnejša je kardinalna omejitev, ki zahteva, da portfelj vsebuje natanko $K$ aktivnih pozicij; iz delnic indeksa S\&P~500 tako namesto celotnega indeksa oblikujemo portfelj iz manjše skupine izbranih delnic. Poleg kardinalnosti za vsako izbrano sredstvo omejimo še najmanjši in največji dovoljeni delež kapitala. Tako dobimo kardinalno omejeni problem optimizacije naložbenega portfelja (v nadaljevanju KONP).
+V tej nalogi klasični ONP razširimo z omejitvami, ki bolje odražajo praktične zahteve pri sestavi portfelja. Najpomembnejša je kardinalna omejitev, ki zahteva, da portfelj vsebuje natanko $K$ aktivnih pozicij; iz sredstev indeksa S\&P~500 tako namesto celotnega indeksa oblikujemo portfelj iz manjše skupine izbranih sredstev. Poleg kardinalnosti za vsako izbrano sredstvo omejimo še najmanjši in največji dovoljeni delež kapitala. Tako dobimo kardinalno omejeni problem optimizacije naložbenega portfelja (v nadaljevanju KONP).
 
 KONP je zahtevnejši od osnovnega ONP, ker poleg zveznega določanja uteži vključuje tudi diskretno izbiro sredstev: optimizator mora hkrati določiti, katerih $K$ sredstev izmed $N$ bo vključil in kako bo mednje razporedil kapital. Že sam izbor omogoča $\binom{N}{K}$ kombinacij, zato izčrpno iskanje pri večjih problemih hitro postane nepraktično~\cite{chang2000}. Težavo povečuje še dejstvo, da sta $\vec{\mu}$ in $\vec{\Sigma}$ v praksi neznana in ju moramo oceniti iz podatkov.
 
@@ -176,7 +182,7 @@ Znanstvene članke, ki si delijo raziskovalno področje z našim delom, lahko ra
 
 \subsection{Optimizacija naložbenih portfeljev}
 
-Po Markowitzevem modelu~\cite{markowitz1952} se je velik del raziskav osredotočil na vprašanje, kako zanesljivi so optimizirani portfelji, kadar so njihovi vhodni podatki ocenjeni iz omejenega vzorca. Michaud~\cite{michaud1989} je opozoril, da lahko že majhne napake v ocenjenih donosih povzročijo velike spremembe v sestavi portfelja. Zato so se razvili pristopi, ki skušajo zmanjšati vpliv teh napak. Med najbolj znanimi je Black-Littermanov model~\cite{black1992,helitterman1999}, ki pri oblikovanju ocen prihodnjih donosov upošteva dodatne informacije o trgu. Empirične primerjave so hkrati pokazale, da zahtevnejša optimizacija zunaj vzorca ni vedno uspešnejša od preprostih strategij~\cite{demiguel2009,bessler2017,tu2011}.
+Po Markowitzevem modelu~\cite{markowitz1952} se je velik del raziskav osredotočil na vprašanje, kako zanesljivi so optimizirani portfelji, kadar so njihovi vhodni podatki ocenjeni iz omejenega vzorca. Michaud~\cite{michaud1989} je opozoril, da lahko že majhne napake v ocenjenih donosih povzročijo velike spremembe v sestavi portfelja. Zato so se razvili pristopi, ki skušajo zmanjšati vpliv teh napak. Med najbolj znanimi je Black--Littermanov model~\cite{black1992,helitterman1999}, ki pri oblikovanju ocen prihodnjih donosov upošteva dodatne informacije o trgu. Empirične primerjave so hkrati pokazale, da zahtevnejša optimizacija zunaj vzorca ni vedno uspešnejša od preprostih strategij~\cite{demiguel2009,bessler2017,tu2011}.
 
 Omenimo še pristope k reševanju KONP\@. Zgodnejše raziskave so uporabljale natančne matematične postopke~\cite{bienstock1996,gao2013}, vzporedno pa so se razvijali tudi hevristični pristopi, ki iščejo kakovostne rešitve brez preiskovanja vseh možnih kombinacij~\cite{chang2000}. Kasnejše metode so problem poskušale poenostaviti tako, da spodbujajo manjše število aktivnih uteži~\cite{brodie2009,kim2016sparse}, ali pa so združile več različnih načinov iskanja in določanja uteži~\cite{akbay2020}.
 
@@ -184,7 +190,7 @@ Omenimo še pristope k reševanju KONP\@. Zgodnejše raziskave so uporabljale na
 
 Zgodnejše raziskave napovedovanja donosov so iskale predvsem ponavljajoče se zakonitosti v preteklih podatkih in ekonomskih značilnostih sredstev. Primer je moment, pri katerem imajo sredstva z relativno boljšimi preteklimi donosi v določenih obdobjih težnjo, da ostanejo uspešnejša tudi v bližnji prihodnosti~\cite{jegadeesh1993,carhart1997}. Takšni pristopi temeljijo predvsem na vnaprej določenih signalih. Z večjo količino razpoložljivih podatkov pa so se začele uporabljati metode strojnega učenja, ki lahko same poiščejo uporabne nelinearne povezave med večjim številom značilk~\cite{gu2020}. Med takšne pristope sodijo tudi modeli, kot je LightGBM~\cite{ke2017lightgbm}.
 
-Naslednji korak je bil neposredno modeliranje časovnega razvoja podatkov z nevronskimi mrežami. Selvin in sod.~\cite{selvin2017stock} so pri napovedovanju cen delnic primerjali več rekurentnih in konvolucijskih arhitektur. Modeli, kot je LSTM~\cite{hochreiter1997lstm}, so bili pri tem zanimivi predvsem zato, ker lahko pri napovedi upoštevajo informacije iz daljšega zaporedja preteklih opazovanj. Napovedni modeli so se začeli vključevati tudi neposredno v postopke sestave portfeljev. Barua in Sharma~\cite{barua2022} sta na primer napovedi nevronskega modela uporabila kot vhod v Black-Littermanov pristop.
+Naslednji korak je bil neposredno modeliranje časovnega razvoja podatkov z nevronskimi mrežami. Selvin in sod.~\cite{selvin2017stock} so pri napovedovanju cen delnic primerjali več rekurentnih in konvolucijskih arhitektur. Modeli, kot je LSTM~\cite{hochreiter1997lstm}, so bili pri tem zanimivi predvsem zato, ker lahko pri napovedi upoštevajo informacije iz daljšega zaporedja preteklih opazovanj. Napovedni modeli so se začeli vključevati tudi neposredno v postopke sestave portfeljev. Barua in Sharma~\cite{barua2022} sta na primer napovedi nevronskega modela uporabila kot vhod v Black--Littermanov pristop.
 
 Novejši razvoj predstavljajo arhitekture s pozornostjo in transformerji~\cite{vaswani2017}. Ti omogočajo, da model pri napovedi neposredno ovrednoti pomen različnih delov vhodnega zaporedja, zato so postali zanimivi tudi za finančne časovne vrste~\cite{wang2022,zhang2022transformer}. Vzporedno so se razvili splošnejši modeli za napovedovanje časovnih vrst~\cite{wu2021autoformer,das2024timesfm}. Raziskave se hkrati vse bolj oddaljujejo od obravnave posamezne delnice kot izoliranega zaporedja. Nekateri modeli upoštevajo povezave med različnimi delnicami~\cite{ye2020multigraph,li2020graphstock}, drugi pa cenovne podatke dopolnjujejo z novicami, besedili in informacijami o podjetjih~\cite{sawhney2020deep,cheng2022multimodality}. Leow in sod.~\cite{leow2021} so na primer razpoloženje iz družbenih omrežij, ki ga zajamejo z modelom BERT, prek genetskega algoritma vključili v klasično sestavo portfelja; njihovo delo uporabimo kot zunanjo referenčno primerjavo v razdelku~\ref{sec:leow}. V našem delu iz tega širšega razvoja izberemo TFT~\cite{lim2021tft}, MASTER~\cite{li2024master} in PatchTST~\cite{nie2023patchtst}, ki predstavljajo tri različne načine uporabe transformerjev za napovedovanje časovnih vrst in finančnih donosov.
 
@@ -212,28 +218,9 @@ napovedovanje časovnih vrst. Njegova glavna posebnost je, da časovnih vrst ne 
 
 Naj bo $L$ dolžina vhodnega zaporedja, $P$ dolžina posameznega odseka in $S$ korak med začetkoma dveh zaporednih odsekov. Če je $S<P$, se odseki prekrivajo. Večji $L$ pomeni daljši zgodovinski kontekst, večji $P$ več informacij znotraj posameznega žetona, manjši $S$ pa večje prekrivanje med sosednjimi odseki~\cite{nie2023patchtst}. Takšna razdelitev zmanjša število žetonov v primerjavi z obravnavo vsake časovne točke posebej in tako omogoča učinkovitejšo obdelavo daljših vhodnih zaporedij. Vsak časovni odsek se pred vstopom v kodirnik preslika v notranjo predstavitev dimenzije $D$. Znotraj transformerskega kodirnika večglava samopozornost išče povezave med različnimi časovnimi odseki, naprej usmerjeno omrežje pa uporablja skrito dimenzijo $F$. Število glav pozornosti označimo z $H_{\mathrm{att}}$, da ga ločimo od napovednega obzorja $H$.
 
-Druga pomembna lastnost PatchTST je \emph{neodvisnost kanalov} (angl.\ \emph{channel independence}). Vsaka vhodna časovna vrsta se obdeluje ločeno, vendar vse uporabljajo isti transformer in iste naučene parametre~\cite{nie2023patchtst}. Pri našem problemu to pomeni, da model časovne vzorce posamezne delnice obdeluje neodvisno od drugih delnic.
+Druga pomembna lastnost PatchTST je \emph{neodvisnost kanalov} (angl.\ \emph{channel independence}): vsaka vhodna časovna vrsta se obdeluje ločeno, vse pa delijo iste naučene parametre~\cite{nie2023patchtst}. To pomeni, da model časovne vzorce posameznega sredstva modelira neodvisno od preostalih, kar mu hkrati omogoča posploševanje čez celoten nabor sredstev. V našem cevovodu model napove dnevne logaritemske donose $\tilde r_{i,t+h}$ za naslednjih $H$ dni ($h=1,\dots,H$); napovedi po zvezi~\eqref{eq:horizon-return} pretvorimo v pričakovani $H$-dnevni enostavni donos $r_{i,t}^{(H)}$ in ocene vseh sredstev zberemo v vektor $\hat{\vec{\mu}}_{\mathrm{PatchTST}}$.
 
-V našem cevovodu PatchTST za posamezno sredstvo napove dnevne logaritemske donose za naslednjih $H$ dni. Napovedi po zvezi~\eqref{eq:horizon-return}, uvedeni v uvodu, pretvorimo v pričakovani $H$-dnevni enostavni donos. Ocene vseh sredstev nato zberemo v vektor $\hat{\vec{\mu}}_{\mathrm{PatchTST}}$.
-
-Tok podatkov prikazuje Slika~\ref{fig:flow-patchtst}. Vhodne časovne vrste $n$ sredstev dolžine $T$ (\textbf{I}) se razdelijo na $L/S$ prekrivajočih se odsekov (\textbf{II}), ki vstopijo v transformerski kodirnik. Ker PatchTST obdeluje vsako sredstvo neodvisno z istimi parametri, se isti blok TST aplicira za vsako delnico posebej (\textbf{III}). Izhodni vektorji $h_i$ pozornostnih glav (\textbf{IV}) se linearno preslikajo v napovedi donosov in po zvezi~\eqref{eq:horizon-return} pretvorijo v oceno $\hat{\vec{\mu}}_{\mathrm{PatchTST}}$ (\textbf{V}--\textbf{VI}).
-
-\begin{figure}[htbp]
-  \vspace{-4pt}
-  \centering
-  \includegraphics[width=\linewidth]{fig/model_flow_patchtst.pdf}
-  \vspace{-10pt}
-  \caption{Tok podatkov skozi PatchTST: vhod, arhitekturni koraki in pretvorba izhoda v $\hat{\mu}_{\mathrm{PatchTST},i}$.}
-  \label{fig:flow-patchtst}
-\end{figure}
-
-\textbf{Naše prilagoditve.} Jedro modela smo prevzeli neposredno iz uradnega repozitorija avtorjev~\cite{nie2023patchtst} brez sprememb arhitekture. Prilagodili smo izključno podatkovni vmesnik in postopek učenja:
-\begin{itemize}
-  \item \emph{Samo surovi donosi.} Izvorni PatchTST je bil razvit in preizkušen na standardnih merilnih naborih za napovedovanje časovnih vrst (npr.\ ETT, Weather), kjer so vhodi surove merjene vrednosti. V finančnih aplikacijah bi bil skušnjava vhod obogatiti z inženirskimi značilkami, a smo se odločili za izključno dnevne logaritemske donose.
-  \item \emph{Normalizacija brez uhajanja.} Avtorji v izvorni implementaciji za normalizacijo pred vstopom v model predlagajo RevIN, ki vzorec normalizira na podlagi statistik istega vzorca, torej pri sklepanju niso potrebni zunanji parametri. V našem protokolu postopnega vrednotenja zunaj vzorca RevIN ni ustrezen, saj bi statistike na testnih vzorcih vsebovale informacijo iz prihodnosti. Namesto tega parametre \texttt{StandardScaler} (povprečje in standardna deviacija) izračunamo za vsako delnico ločeno in izključno iz učnega obdobja. Manjkajoče vrednosti po normalizaciji nadomestimo z nič.
-  \item \emph{Maskirana izguba.} Izvorni model predpostavlja popolna vhodna zaporedja. V finančnih podatkih nekatere delnice v učnem oknu niso kotirane celotno obdobje (npr.\ novouvrstitve ali umaknitve). Standardna izguba MSE bi ničelne vrednosti na teh pozicijah obravnavala kot veljavne cilje in izkrivila učenje; maskirana izguba jih izpusti.
-  \item \emph{Dvostopenjsko učenje z OneCycle urnikom.} Izvorni PatchTST se uči na fiksni učno-validacijski delitvi. Da bi model videl čim več učnih podatkov in hkrati ohranili neodvisno izbiro hiperparametrov, v prvi stopnji z zgodnjim ustavljanjem na validacijskem IC določimo optimalno število epoh, v drugi pa na polnem učnem oknu z OneCycle urnikom učenja naučimo svež model za toliko epoh, kolikor jih je izbrala prva stopnja.
-\end{itemize}
+Jedro modela smo prevzeli neposredno iz uradnega repozitorija avtorjev~\cite{nie2023patchtst} brez sprememb arhitekture; prilagodili smo izključno podatkovni vmesnik in postopek učenja. Ker je bil izvorni PatchTST razvit na standardnih merilnih naborih (npr.\ ETT, Weather) s surovimi merjenimi vrednostmi kot vhodi, smo se v finančnem kontekstu odločili za izključno dnevne logaritemske donose $\tilde r_{i,t}$. Izvorni podatkovni nalagalnik vsa sredstva normalizira skupaj, torej z enim samim povprečjem in standardnim odklonom za celoten nabor; ker imajo sredstva bistveno različne ravni in volatilnosti donosov, normalizacijska parametra izračunamo za vsako sredstvo posebej in izključno iz učnega obdobja. Izvorni model predpostavlja popolna vhodna zaporedja, zato smo uvedli maskirano izgubo, ki pozicije nekotiranih sredstev izpusti namesto da bi jih obravnavala kot veljavne cilje MSE\@. Za dvostopenjsko učenje v prvi stopnji z zgodnjim ustavljanjem na validacijskem IC določimo optimalno število epoh, v drugi pa na polnem učnem oknu naučimo svež model za toliko epoh, kolikor jih je izbrala prva stopnja.
 
 % ------------------------------------------------------------
 % TFT
@@ -244,56 +231,24 @@ napovedovanje časovnih vrst, pri katerih imamo na voljo več različnih vrst vh
 
 Dolžino preteklega okna v izvornem delu označujejo s $k$, največje napovedno obzorje pa z $\tau_{\max}$~\cite{lim2021tft}. V našem skupnem cevovodu napovedno obzorje označujemo s $H$. Parameter $k$ tako določa, koliko pretekle zgodovine je modelu na voljo, $H$ pa, kako daleč v prihodnost napovedujemo. TFT najprej z omrežji za izbiro spremenljivk določi relativni pomen posameznih vhodnih informacij. Pomembnejšim spremenljivkam lahko pripiše večjo utež, manj uporabnim pa manjšo. Časovno zaporedje nato obdela z rekurentnimi plastmi LSTM, ki zajamejo predvsem lokalne časovne vzorce. Njihove izhodne predstavitve so vhod v časovno samopozornost, ki lahko neposredno povezuje tudi bolj oddaljene časovne korake~\cite{lim2021tft}. Velikost notranjih predstavitev določa parameter $d_{\mathrm{model}}$. Večja vrednost omogoča bogatejše predstavitve, vendar hkrati poveča število naučljivih parametrov in računsko zahtevnost modela.
 
-Izvorni TFT uporablja kvantilno regresijo in napoveduje več kvantilov prihodnje ciljne spremenljivke~\cite{lim2021tft}. V našem cevovodu kot točkovno napoved uporabimo osrednjo napoved modela. Napovedane dnevne logaritemske donose za naslednjih $H$ dni po zvezi~\eqref{eq:horizon-return} pretvorimo v pričakovani $H$-dnevni enostavni donos, ocene vseh sredstev pa zberemo v vektor $\hat{\vec{\mu}}_{\mathrm{TFT}}$.
+Izvorni TFT napoveduje več kvantilov prihodnje ciljne spremenljivke~\cite{lim2021tft}; v našem cevovodu kot točkovno napoved uporabimo medianski kvantil. Napovedane dnevne logaritemske donose $\tilde r_{i,t+h}$ za naslednjih $H$ dni po zvezi~\eqref{eq:horizon-return} pretvorimo v pričakovani $H$-dnevni enostavni donos $r_{i,t}^{(H)}$ in ocene vseh sredstev zberemo v vektor $\hat{\vec{\mu}}_{\mathrm{TFT}}$.
 
-Tok podatkov prikazuje Slika~\ref{fig:flow-tft}. Vhodni tenzor $N$ sredstev dolžine $T$ (\textbf{I}) gre skozi omrežja za izbiro spremenljivk VSN (\textbf{II}), ki z utežmi $\sigma$ določijo relevantnost posameznih vhodnih spremenljivk. Rekurentne plasti LSTM (\textbf{III}) nato zajamejo lokalne časovne vzorce, njihove izhodne predstavitve pa vstopijo v časovno samopozornost, ki modelira odvisnosti na razponu celotnega okna $T$ (\textbf{IV}). Kvantilni izhodi se reducirajo na medianski $\hat{\mu}$ in po zvezi~\eqref{eq:horizon-return} pretvorijo v $\hat{\vec{\mu}}_{\mathrm{TFT}}$ (\textbf{V}--\textbf{VI}).
-
-\begin{figure}[htbp]
-  \vspace{-4pt}
-  \centering
-  \includegraphics[width=\linewidth]{fig/model_flow_tft.pdf}
-  \vspace{-10pt}
-  \caption{Tok podatkov skozi TFT: vhod, arhitekturni koraki in pretvorba izhoda v $\hat{\mu}_{\mathrm{TFT},i}$.}
-  \label{fig:flow-tft}
-\end{figure}
-
-\textbf{Naše prilagoditve.} TFT implementiramo neposredno prek knjižnice \texttt{pytorch-forecasting}~\cite{lim2021tft} brez sprememb arhitekture. Prilagodili smo le vhodni vmesnik in postopek učenja:
-\begin{itemize}
-  \item \emph{Tri numerične značilke namesto bogatih kovariatov.} Izvorni TFT je bil razvit za domene z bogatimi vnaprej znanimi kovarijanti (npr.\ promocije v maloprodaji, praznike pri napovedovanju porabe energije). V finančnih podatkih prihodnja vrednost nobene relevantne spremenljivke ni znana vnaprej, zato vse vhodne spremenljivke spadajo med zgodovinsko opazovane. Izberemo tri: dnevni logaritemski donos, 20-dnevni moment in 20-dnevno volatilnost; vsaka delnica dobi statični kategorični vložek, ki ga TFT naučljivo pripiše posamezni delnici in s tem kodira idiosinkratični profil vsake delnice.
-  \item \emph{Normalizacija po delnicah.} Izvorni model normalizacijo ciljne spremenljivke prepušča uporabniku. Ker imajo delnice med seboj zelo različne ravni in volatilnosti donosov, bi skupna normalizacija sistematično favorizirala visoko-volatilna sredstva. \texttt{GroupNormalizer} parametre izračuna ločeno za vsako delnico in izključno iz učnih podatkov, kar preprečuje uhajanje informacij iz testnega obdobja.
-  \item \emph{Pretvorba kvantilnega izhoda.} Izvorni TFT je zasnovan za kvantilno napovedovanje in ne vrača neposredno točkovne ocene. V našem optimizacijskem cevovodu potrebujemo en sam vektor $\hat{\vec{\mu}}$, zato kot točkovno napoved vzamemo mediano (kvantilov 0{,}5); mediana je bolj robustna od povprečja pri asimetričnih porazdelitvah finančnih donosov z debelimi repi.
-  \item \emph{Dvostopenjsko učenje.} Knjižnica \texttt{pytorch-forecasting} privzeto opravi eno samo učno fazo; model ob koncu ne vidi podatkov iz validacijskega obdobja. Ker Walk-forward ocenjevanje potrebuje model, učen na čim daljšem oknu, dodamo drugo fazo: svež model naučimo na polnem učnem oknu za toliko epoh, kolikor jih je z zgodnjim ustavljanjem na validacijskem IC izbrala prva faza.
-\end{itemize}
+TFT implementiramo neposredno prek knjižnice \texttt{pytorch-forecasting}~\cite{beitner2020pytorch} brez sprememb arhitekture. Ker je bil izvorni TFT razvit za domene, kjer so prihodnje vrednosti mnogih vhodnih spremenljivk znane vnaprej (npr.\ promocije v maloprodaji), v finančnih podatkih ta vrsta vhoda odpade: prihodnja vrednost nobene relevantne spremenljivke ni znana vnaprej, zato vse vhodne spremenljivke spadajo med zgodovinsko opazovane; izberemo tri: dnevni logaritemski donos $\tilde r_{i,t}$, 20-dnevni moment in 20-dnevno volatilnost, vsako sredstvo pa dobi statični kategorični vložek. Ker bi skupna normalizacija sistematično favorizirala visoko-volatilna sredstva, \texttt{GroupNormalizer} parametre izračuna ločeno za vsako sredstvo in izključno iz učnih podatkov. Knjižnica privzeto opravi eno samo učno fazo, zato dodamo drugo: svež model naučimo na polnem učnem oknu za toliko epoh, kolikor jih je z zgodnjim ustavljanjem na validacijskem IC izbrala prva faza.
 
 % ------------------------------------------------------------
 % MASTER
 % ------------------------------------------------------------
 
 \subsection{MASTER}\label{sec:master}~\cite{li2024master} je transformerski model, posebej zasnovan
-za napovedovanje prihodnjih donosov delnic. Za razliko od PatchTST in TFT obdeluje celoten nabor sredstev hkrati in tako neposredno modelira odvisnosti med delnicami. Model združuje delniško specifične značilke, skupni tržni vektor in presečne (medsredstvene) povezave.
+za napovedovanje prihodnjih donosov sredstev. Za razliko od PatchTST in TFT obdeluje celoten nabor sredstev hkrati in tako neposredno modelira odvisnosti med sredstvi. Model združuje značilke posameznih sredstev, skupni tržni vektor in presečne (medsredstvene) povezave.
 
-Za posamezno sredstvo $u$ ob časovnem koraku $t$ model prejme vektor $\vec{x}_{u,t}$ z 158 tehničnimi značilkami nabora Alpha158, izpeljanimi iz podatkov OHLCV. Med preprostejšimi sta $\mathrm{KMID}=(p_{u,t}-p_{u,t}^{\mathrm{O}})/p_{u,t}^{\mathrm{O}}$ (relativna sprememba med odprtjem in zaprtjem) in $\mathrm{KLEN}=(p_{u,t}^{\mathrm{H}}-p_{u,t}^{\mathrm{L}})/p_{u,t}^{\mathrm{O}}$ (relativni dnevni razpon); tu $p_{u,t}$ označuje zaključno ceno (kot v uvodu), $p_{u,t}^{\mathrm{O}}$ odprtno, $p_{u,t}^{\mathrm{H}}$ najvišjo in $p_{u,t}^{\mathrm{L}}$ najnižjo. Nabor vključuje tudi kazalnike na več časovnih oknih (trend, volatilnost, obseg). Poleg tega model prejme skupni tržni vektor $\vec{m}_t$, v izvornem delu izračunan iz indeksov CSI300, CSI500 in CSI800; v naši izvedbi smo ga nadomestili z ameriškimi indeksnimi skladi (SPY, IWM, VTI), Alpha158 pa izračunali iz podatkov OHLCV za ameriški trg.
+Za posamezno sredstvo $u$ ob časovnem koraku $t$ model prejme vektor $\vec{x}_{u,t}$ z 158 tehničnimi značilkami nabora Alpha158~\cite{yang2020qlib}, izpeljanimi iz dnevnih tržnih podatkov OHLCV (odprtje, dnevni maksimum in minimum, zaprtje in promet). Značilke zajemajo obliko svečnika (razmerja med vrednostmi OHLCV znotraj enega dneva, ki opisujejo gibanje cene) in kotalne statistike na oknih 5 do 60 dni -- momentum, volatilnost, trend in korelacijo s prometom. Vse so normalizirane z zaključno ceno ali dnevnim razponom, kar zagotavlja primerljivost med sredstvi. Poleg značilk posameznih sredstev model prejme skupni tržni vektor $\vec{m}_t$, ki povzema stanje celotnega trga.
 
-Ključna posebnost je \emph{tržno vodeno uteževanje značilk} (angl.\ \emph{market-guided gating}): $\vec{m}_t$ določa, katere delniško specifične značilke so trenutno pomembnejše, in temu ustrezno prilagodi $\vec{x}_{u,t}$~\cite{li2024master}. Utežene značilke nato vstopijo v dve stopnji pozornosti: \emph{združevanje znotraj delnice} ($N_1$ glav) poveže časovne korake iste delnice, \emph{združevanje med delnicami} ($N_2$ glav) pa v vsakem časovnem koraku primerja vse delnice med seboj. Ker je izhod MASTER zasnovan kot presečni razvrščevalni signal in ne neposredna ocena donosa, ga pred vstopom v optimizator z-standardiziramo po preseku in tako dobimo $\hat{\vec{\mu}}_{\mathrm{MASTER}}$.
+Ključna posebnost modela je \emph{tržno vodeno uteževanje značilk} (angl.\ \emph{market-guided gating})~\cite{li2024master}. Tržni vektor $\vec{m}_t$ se v mehanizmu uteževanja kombinira z značilkami sredstev $\vec{x}_{u,t}$: iz $\vec{m}_t$ se izpeljejo uteži za posamezne skupne Alpha158, ki poudarijo tiste značilke, ki so pri trenutnem tržnem stanju bolj informativne, in oslabijo tiste, ki niso. S tem model samodejno prilagaja pomen posameznih tehničnih kazalnikov glede na makro kontekst.
 
-\textbf{Naše prilagoditve.} Nevronsko jedro modela smo prevzeli neposredno iz uradnega repozitorija avtorjev~\cite{li2024master} brez sprememb arhitekture. Prilagodili smo izključno podatkovni vmesnik:
-\begin{itemize}
-  \item \emph{Alpha158 brez Qlib.} Izvorni MASTER predpostavlja platformo Qlib, kitajski kvantitativni okvir, ki Alpha158 izračuna iz lokalnih podatkovnih virov kitajskega trga. Ker smo ciljali na ameriški trg in se želeli izogniti odvisnosti od Qlib, smo vseh 158 značilk reimplementirali neposredno v pandasu iz podatkov OHLCV, prenesenih prek knjižnice \texttt{yfinance}.
-  \item \emph{Ameriški tržni indeksi.} Tržni vektor $\vec{m}_t$ v izvornem modelu temelji na indeksih CSI300, CSI500 in CSI800, ki pokrivajo kitajski delniški trg. Nadomestili smo jih z ameriškimi indeksnimi skladi SPY, IWM in VTI kot funkcionalnimi ekvivalenti (trg velike tržne kapitalizacije, malih delnic in celotnega trga). Struktura ostaja enaka: za vsak indeks 21 značilk (dnevni donos ter drseče povprečje in standardni odklon donosov in obsega na oknih 5, 10, 20, 30 in 60 dni), skupaj 63 tržnih značilk.
-  \item \emph{Normalizacija brez uhajanja.} Izvorni MASTER je zasnovan za paketno (offline) obdelavo, kjer so normalizacijski parametri izračunani iz celotnega nabora podatkov vnaprej. V postopnem vrednotenju zunaj vzorca bi takšen pristop pomenil uhajanje informacij iz prihodnosti v normalizacijo. Parametri RobustZScoreNorm (mediana in MAD) se zato izračunajo izključno iz učnega obdobja vsakega okna in se med testiranjem ne posodabljajo.
-  \item \emph{Dvostopenjsko učenje.} Izvorni model se uči na fiksni učno-validacijski delitvi, pri čemer validacijski podatki po izbiri modela ostanejo neuporabljeni. Da bi model videl celotno učno okno, v prvi stopnji z zgodnjim ustavljanjem na validacijskem IC določimo optimalno število epoh, v drugi pa svež model naučimo na polnem učnem oknu za toliko epoh, kolikor jih je izbrala prva stopnja.
-\end{itemize}
+Utežene značilke nato vstopijo v dve zaporedni stopnji pozornosti. Prva stopnja je pozornost znotraj sredstva (angl.\ \emph{intra-stock}): za vsako sredstvo posebej se večglava samopozornost izvede čez časovne korake tega sredstva, pri čemer model išče vzorce znotraj njegove lastne zgodovine. Druga stopnja je pozornost med sredstvi (angl.\ \emph{inter-stock}): v vsakem časovnem koraku se samopozornost izvede čez vsa sredstva hkrati, kar modelu omogoča, da pri napovedi za posamezno sredstvo upošteva, kaj se dogaja z drugimi. Ta presečna stopnja je ključna razlika od PatchTST in TFT, ki sredstva obdelujeta neodvisno. Napovedni signal na izhodu z-standardiziramo po preseku, saj model napoveduje relativni razvrstitveni signal, ne absolutnih vrednosti donosov -- rezultat je $\hat{\vec{\mu}}_{\mathrm{MASTER}}$.
 
-Tok podatkov povzema Slika~\ref{fig:flow-master}. Vhodni tenzor dimenzij $N\times T\times F$ z značilkami Alpha158 (\textbf{I}) se uteži glede na tržni vektor $\vec{m}_t$ z mehanizmom tržno vodenega uteževanja (\textbf{II}). Samopozornost nato neodvisno za vsako od $N$ delnic poveže različne časovne korake -- to je združevanje znotraj delnice (\textbf{III}). Sledi presečna pozornost, ki v posameznem časovnem koraku primerja predstavitve vseh delnic med seboj -- združevanje med delnicami (\textbf{IV}). Napovedni signal se skalira na donosno lestvico (\textbf{V}) in zbere v $\hat{\vec{\mu}}_{\mathrm{MASTER}}$ (\textbf{VI}).
-
-\begin{figure}[htbp]
-  \vspace{-4pt}
-  \centering
-  \includegraphics[width=\linewidth]{fig/model_flow_master.pdf}
-  \vspace{-10pt}
-  \caption{Tok podatkov skozi MASTER: vhod, arhitekturni koraki in pretvorba izhoda v $\hat{\mu}_{\mathrm{MASTER},i}$.}
-  \label{fig:flow-master}
-\end{figure}
+Nevronsko jedro modela smo prevzeli neposredno iz uradnega repozitorija avtorjev~\cite{li2024master} brez sprememb arhitekture; prilagodili smo izključno podatkovni vmesnik. Ker izvorni MASTER predpostavlja platformo Qlib~\cite{yang2020qlib}, ki Alpha158 izračuna iz kitajskih podatkovnih virov, smo vseh 158 značilk ter normalizacijski protokol reimplementirali v pandasu iz podatkov OHLCV, prenesenih prek knjižnice \texttt{yfinance}. Kitajske tržne indekse CSI300, CSI500 in CSI800 smo nadomestili z ameriškimi indeksnimi skladi SPY, IWM in VTI kot funkcionalnimi ekvivalenti; struktura tržnega vektorja ostaja enaka. Dvostopenjsko učenje sledi isti shemi kot pri PatchTST in TFT.
 
 % ============================================================
 % COVARIANCE
@@ -383,12 +338,12 @@ Slika~\ref{fig:pso-illus} prikazuje, kako roj skupaj konvergira k optimumu.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=\linewidth]{fig/optimizer_pso_illus.pdf}
+  \includegraphics[height=\figheight]{fig/optimizer_pso_illus.pdf}
   \caption{Konvergenca roja delcev v poenostavljenem 2D prostoru portfeljev. Izolinije prikazujejo ciljno funkcijo $f(\vec{w})=-\mathrm{Sharpe}(\vec{w})$; rdeča zvezda je globalni minimum $\vec{w}^*$.}
   \label{fig:pso-illus}
 \end{figure}
 
-Slika~\ref{fig:pso-illus} ponazarja štiri značilne trenutke algoritma RD. V \textbf{iteraciji~1} je pet delcev (I–V) naključno razpršenih po prostoru portfeljev; vsak delec si kot osebni optimum $p_i$ (vijolični rombič) zapomni svojo začetno pozicijo. V \textbf{iteraciji~2} se vsi delci premaknejo v smeri skupne hitrosti $v_m$ (oranžne puščice); delec~II, ki je začel v zgornjem levem kotu in tam našel dobro rešitev, nosi $p_i$ blizu svojega izhodišča. V \textbf{iteraciji~$t$} vidimo hitrostno dekompozicijo za delec~II: vijolična puščica $v_p = \omega_1 r_1 (p_i - \vec{w}_m)$ ga vleče nazaj proti osebnemu optimumu, rdeča puščica $v_g = \omega_2 r_2 (g - \vec{w}_m)$ pa ga privlači k najboljši rešitvi celotnega roja~$g$; skupna hitrost $v_m = v_p + v_g$ (oranžna) kaže navzgor proti območju optimuma. V \textbf{konvergenci} se roj zbere v bližini $\vec{w}^*$.
+Slika~\ref{fig:pso-illus} ponazarja štiri značilne trenutke algoritma RD\@. V \textbf{iteraciji~1} je pet delcev (I--V) naključno razpršenih po prostoru portfeljev; vsak delec si kot osebni optimum $p_i$ (vijolični rombič) zapomni svojo začetno pozicijo. V \textbf{iteraciji~2} se vsi delci premaknejo v smeri skupne hitrosti $v_m$ (oranžne puščice); delec~II, ki je začel v zgornjem levem kotu in tam našel dobro rešitev, nosi $p_i$ blizu svojega izhodišča. V \textbf{iteraciji~$t$} vidimo hitrostno dekompozicijo za delec~II: vijolična puščica $v_p = \omega_1 r_1 (p_i - \vec{w}_m)$ ga vleče nazaj proti osebnemu optimumu, rdeča puščica $v_g = \omega_2 r_2 (g - \vec{w}_m)$ pa ga privlači k najboljši rešitvi celotnega roja~$g$; skupna hitrost $v_m = v_p + v_g$ (oranžna) kaže navzgor proti območju optimuma. V \textbf{konvergenci} se roj zbere v bližini $\vec{w}^*$.
 
 \begin{algorithm}[H]
 \caption{Rojenje delcev za KONP~\cite{cura2009}}
@@ -429,13 +384,7 @@ Slika~\ref{fig:pso-illus} ponazarja štiri značilne trenutke algoritma RD. V \t
 \end{algorithmic}
 \end{algorithm}
 
-\textbf{Naše prilagoditve.} Izvorni PSO~\cite{kennedy1995} je zasnovan za zvezne, neomejene probleme: vsak delec je enojni realnoštevilski vektor, premiki pa so vodeni z inercijo in privlačnostjo k osebni in skupni najboljši rešitvi. KONP uvede zahteve, ki jih izvorni PSO ne podpira: kardinalno omejitev (natanko $K$ aktivnih sredstev) ter proračunsko in utežno dopustnost. Po Curi~\cite{cura2009} uvedemo naslednje prilagoditve:
-\begin{itemize}
-  \item \emph{Dvojna predstavitev.} Namesto enega zveznega vektorja vsak delec hrani par $(\vec{x}_m,\vec{z}_m)$: zvezni utežni vektor in binarni selekcijski vektor. Izvorni PSO binarnega dela nima, zato je ta razširitev nujna za izražanje diskretne odločitve o vključitvi sredstva.
-  \item \emph{Ločene posodobitve.} Binarni del se posodablja prek sigmoidne funkcije z odmikom $\alpha=0{,}06$, ki preprečuje neželene aktivacije pri ničelni hitrosti; zvezni del se posodablja samo za aktivna sredstva ($z_{m,i}=1$). Standardni PSO pozna le eno enačbo za posodobitev hitrosti in položaja.
-  \item \emph{Popravek kardinalnosti.} Binarni premiki ne zagotavljajo natanko $K$ aktivnih sredstev, zato po vsakem premiku selekcijo popravimo z mero $c_i$~\eqref{eq:pso-c-score}, ki tehta pričakovani donos napram povprečni kovariance. Ker se $\hat{\vec{\mu}}$ in $\hat{\vec{\Sigma}}$ med enim klicem optimizatorja ne spremenita, $c_i$ izračunamo enkrat pred začetkom iteracij.
-  \item \emph{Brez inercijalnega koeficienta.} Standardni PSO dampira hitrosti z inercijo $\omega\in[0,1]$; Cura~\cite{cura2009} za KONP pokaže, da je izpustitev inercije učinkovitejša, in naša izvedba sledi tej odločitvi.
-\end{itemize}
+Izvorni PSO~\cite{kennedy1995} je zasnovan za zvezne, neomejene probleme: vsak delec je enojni realnoštevilski vektor, premiki pa so vodeni z inercijo in privlačnostjo k osebni in skupni najboljši rešitvi. KONP uvede kardinalno, proračunsko in utežno dopustnost, ki jih izvorni PSO ne podpira. Po Curi~\cite{cura2009} vsak delec hrani dvojno predstavitev $(\vec{x}_m,\vec{z}_m)$ -- zvezni utežni in binarni selekcijski vektor -- z ločenima enačbama za posodobitev: binarni del prek sigmoidne funkcije z odmikom $\alpha=0{,}06$, zvezni del le za aktivna sredstva. Ker binarni premiki ne zagotavljajo natanko $K$ aktivnih sredstev, po vsakem premiku kardinalnost popravimo z mero $c_i$~\eqref{eq:pso-c-score}, ki jo izračunamo enkrat pred začetkom iteracij. Inercijski koeficient izpustimo skladno s Curino ugotovitvijo, da je to učinkovitejše za KONP~\cite{cura2009}.
 
 % ------------------------------------------------------------
 % SO
@@ -486,7 +435,7 @@ Pri vsaki temperaturni stopnji izvedemo $L$ kandidatnih premikov, iskanje pa za�
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=\linewidth]{fig/optimizer_sa_illus.pdf}
+  \includegraphics[height=\figheight]{fig/optimizer_sa_illus.pdf}
   \caption{Simulirano ohlajanje na poenostavljeni 1D pokrajini portfeljev ($x$ = portfelj $\vec{w}$, $y$ = $-\mathrm{Sharpe}(\vec{w})$). Zelena polna puščica pomeni sprejet korak, rdeča prekinjena zavrnjenega; osenčeno področje je soseščina polmera $q$ okoli trenutnega portfelja.}
   \label{fig:sa-illus}
 \end{figure}
@@ -538,13 +487,7 @@ V prvem panelu (visok $T$) algoritem z velikim polmerom $q_1$ naredi korak navzd
 \end{algorithmic}
 \end{algorithm}
 
-\textbf{Naše prilagoditve.} Izvorni SA~\cite{kirkpatrick1983} določa le Metropolisovo pravilo sprejema in geometrijsko ohlajanje; funkcija sosednosti je prepuščena domeni in jo je treba zasnovati za vsak problem posebej. Poleg tega izvorni opis ne predpisuje, kako nastaviti začetno temperaturo $T_0$ niti kdaj iskanje zaključiti. Po Crami in Schynsu~\cite{cramaschyns2003} uvedemo naslednje prilagoditve:
-\begin{itemize}
-  \item \emph{Dvovrstna sosednost za KONP.} Soseščina vsebuje dve vrsti premikov: zamenjavo sredstev (z verjetnostjo $0{,}10$; binarni selekcijski del se spremeni pri nespremenjeni vsoti uteži) in perturbacijo uteži znotraj trenutnega nabora aktivnih sredstev. Izvorni SA in Crama--Schyns ne predpišeta konkretnega razmerja med vrstama premikov; delež zamenjav je naša implementacijska odločitev.
-  \item \emph{Samodejna kalibracija $T_0$.} Namesto ročnega nastavljanja začetno temperaturo izpeljemo iz želenega začetnega sprejema $v_0$: krajša kalibracijska veriga izmeri tipično poslabšanje $\overline{\Delta}^+$, iz katerega sledi $T_0=\overline{\Delta}^+/(-\ln v_0)$. S tem se algoritem samodejno prilagodi obsegu ciljne funkcije.
-  \item \emph{Dvopolmerska shema.} Crama in Schyns~\cite{cramaschyns2003} uporabljata en sam polmer. Mi dodamo prehod $q_1\to q_2$, ki se sproži, ko je v stopnji sprejetih premikov manj kot $A_{\min}$; ta enosmerni prehod algoritmu omogoči fino iskanje v bližini optimuma po začetnem globalnem preiskovanju.
-  \item \emph{Ustavitveni pogoj po mirovanju.} Ko $S$ zaporednih temperaturnih stopenj ne sprejme nobenega kandidata, iskanje zaključimo. Izvorni SA in Crama--Schyns tega ne predpisujeta; po naši izkušnji pogoj znatno skrajša čas na platojih brez izgube kakovosti, saj \textit{best\_weights} ves čas ohranja najboljšo doslej doseženo rešitev.
-\end{itemize}
+Izvorni SA~\cite{kirkpatrick1983} določa le Metropolisovo pravilo sprejema in geometrijsko ohlajanje; funkcija sosednosti, nastavitev $T_0$ in ustavitveni pogoj so prepuščeni domeni. Po Crami in Schynsu~\cite{cramaschyns2003} sosednost zasnujemo z dvema vrstama premikov: zamenjavo sredstev (z verjetnostjo $0{,}10$; naša implementacijska odločitev) in perturbacijo uteži znotraj aktivnih sredstev. Začetno temperaturo samodejno izpeljemo iz želenega začetnega sprejema $v_0$: kalibracijska veriga izmeri tipično poslabšanje $\overline{\Delta}^+$, iz katerega sledi $T_0=\overline{\Delta}^+/(-\ln v_0)$. Ker Crama in Schyns~\cite{cramaschyns2003} uporabljata en sam polmer, dodamo prehod $q_1\to q_2$, ki se sproži ob premalo sprejetih kandidatih v stopnji in algoritmu omogoči fino iskanje po začetnem globalnem preiskovanju. Ko $S$ zaporednih temperaturnih stopenj ne sprejme nobenega kandidata, iskanje zaključimo -- ta pogoj izvorni SA in Crama--Schyns ne predpisujeta, po naši izkušnji pa znatno skrajša čas na platojih brez izgube kakovosti.
 
 
 
@@ -565,7 +508,7 @@ V prejšnjih razdelkih smo ločeno predstavili napovedovanje pričakovanih donos
 
 \subsection{Programska zasnova cevovoda}\label{sec:tech}
 
-Pripravo podatkov, učenje modelov, vodenje poskusov in vrednotenje rezultatov izvajamo v jeziku Python; transformerske modele v okolju PyTorch. Optimizacijski del je implementiran v C++17, oba dela pa komunicirata prek datotek JSON. Celoten tok je prikazan na Sliki~\ref{fig:pipeline}.
+Pripravo podatkov, učenje modelov, vodenje poskusov in vrednotenje rezultatov izvajamo v jeziku Python; transformerske modele v okolju PyTorch. Optimizacijski del je implementiran v C++17, oba dela pa komunicirata prek datotek JSON\@. Celoten tok je prikazan na Sliki~\ref{fig:pipeline}.
 
 \begin{figure}[H]
 \centering
@@ -576,39 +519,18 @@ Pripravo podatkov, učenje modelov, vodenje poskusov in vrednotenje rezultatov i
 
 
 % ------------------------------------------------------------
-% FORECASTING IN THE PIPELINE
+% PIPELINE AND EVALUATION
 % ------------------------------------------------------------
 
-\subsection{Napovedni del cevovoda}\label{sec:forecast-pipeline}
+\subsection{Potek cevovoda in vrednotenje}\label{sec:forecast-pipeline}\label{sec:optimization-pipeline}\label{sec:eval}
 
-V koraku~I (Slika~\ref{fig:pipeline}) iz tržnih podatkov, razpoložljivih do odločitvenega trenutka $t$, pripravimo donose in vhodne značilke. V koraku~II napovedni model oceni $\hat{\vec{\mu}}_t$; kot referenčni pristop brez nevronskega modela služi zgodovinsko povprečje. V koraku~III vzorčno ocenimo $\hat{\vec{\Sigma}}_t$ iz istih donosov; ker se $\hat{\vec{\Sigma}}$ pri vseh pristopih ocenjuje enako, primerjava izolira vpliv $\hat{\vec{\mu}}$. Učne in validacijske podatke vedno ločimo kronološko; spodaj so navedene le implementacijske odločitve, specifične za posamezni model.
+\paragraph{Napovedni del.} V koraku~I (Slika~\ref{fig:pipeline}) iz tržnih podatkov, razpoložljivih do odločitvenega trenutka $t$, pripravimo donose $r_{i,t}$ in $\tilde r_{i,t}$~\eqref{eq:returns} ter vhodne značilke. V koraku~II napovedni model oceni $\hat{\vec{\mu}}_t$; kot referenčni pristop brez nevronskega modela služi zgodovinsko povprečje. V koraku~III vzorčno ocenimo $\hat{\vec{\Sigma}}_t$ iz istih donosov; ker se $\hat{\vec{\Sigma}}$ pri vseh pristopih ocenjuje enako, primerjava izolira vpliv $\hat{\vec{\mu}}$. Učne in validacijske podatke vedno ločimo kronološko. Prilagoditve PatchTST so opisane v razdelku~\ref{sec:patchtst}, TFT v razdelku~\ref{sec:tft} in MASTER v razdelku~\ref{sec:master}.
 
-Prilagoditve PatchTST so opisane v razdelku~\ref{sec:patchtst}, TFT v razdelku~\ref{sec:tft} in MASTER v razdelku~\ref{sec:master}.
+\paragraph{Optimizacijski del.} Prilagoditve RD so opisane v razdelku~\ref{sec:rd}, SO v razdelku~\ref{sec:so}. Edina implementacijska posebnost, ki ni razvidna iz algoritmičnega opisa, je optimizacija izračuna variance: upoštevamo le aktivna sredstva, kar vrednosti ciljne funkcije ne spremeni, zahtevnost kvadratnega dela pa zmanjša z $O(N^2)$ na $O(K^2)$. Rezultat optimizacijskega dela je vektor $\vec{w}_t$, ki določa portfelj do naslednjega odločitvenega trenutka.
 
+\paragraph{Postopno vrednotenje zunaj vzorca.} V koraku~V (Slika~\ref{fig:pipeline}) portfelj $\vec{w}_t$ držimo od $t+1$ do $t+H$ in realizirani donos portfelja $r_t^{\mathrm p}$~\eqref{eq:portret} izračunamo iz dejanskih prihodnjih cen; korak~VI skozi celotno testno obdobje zbere zunajvzorčne rezultate za mere iz razdelka~\ref{sec:metrics}. Ta postopek -- postopno testiranje (angl.\ \emph{walk-forward}) -- zagotavlja, da v odločitvenem trenutku $t$ učni postopek, ocenjevanje $(\hat{\vec{\mu}}_t,\hat{\vec{\Sigma}}_t)$ in optimizacija $\vec{w}_t$ uporabljajo samo informacije iz množice $\mathcal{D}_t$. Za vsako kombinacijo napovednega vira, optimizatorja in parametra $P$ tako določimo portfelj, ki ga držimo do naslednjega odločitvenega trenutka, njegov donos pa izračunamo iz dejansko realiziranih kasnejših cen. Če eksperimentalni protokol zahteva ponovno učenje, model v predpisanih trenutkih naučimo znova samo na takrat razpoložljivih podatkih. Takšen postopek preprečuje uhajanje prihodnjih informacij in omogoča primerjavo metod v razmerah, ki približujejo dejansko zaporedno sprejemanje naložbenih odločitev.
 
-% ------------------------------------------------------------
-% OPTIMIZATION IN THE PIPELINE
-% ------------------------------------------------------------
-
-\subsection{Optimizacijski del cevovoda}
-\label{sec:optimization-pipeline}
-
-Prilagoditve RD so opisane v razdelku~\ref{sec:rd}, SO v razdelku~\ref{sec:so}. Edina implementacijska posebnost, ki ni razvidna iz algoritmičnega opisa, je optimizacija izračuna variance: upoštevamo le aktivna sredstva, kar vrednosti ciljne funkcije ne spremeni, zahtevnost kvadratnega dela pa zmanjša z $O(N^2)$ na $O(K^2)$. Rezultat optimizacijskega dela je vektor $\vec{w}_t$, ki določa portfelj do naslednjega odločitvenega trenutka.
-
-
-% ------------------------------------------------------------
-% WALK-FORWARD EVALUATION
-% ------------------------------------------------------------
-
-\subsection{Postopno vrednotenje zunaj vzorca}\label{sec:eval}
-
-V koraku~V (Slika~\ref{fig:pipeline}) portfelj $\vec{w}_t$ držimo od $t+1$ do $t+H$ in realizirani donos izračunamo iz dejanskih prihodnjih cen; korak~VI skozi celotno testno obdobje zbere zunajvzorčne rezultate za mere iz razdelka~\ref{sec:metrics}. Ta postopek — postopno testiranje (angl.\ \emph{walk-forward}) — zagotavlja, da v odločitvenem trenutku $t$ učni postopek, ocenjevanje $(\hat{\vec{\mu}}_t,\hat{\vec{\Sigma}}_t)$ in optimizacija $\vec{w}_t$ uporabljajo samo informacije iz množice $\mathcal{D}_t$.
-
-Za vsako kombinacijo napovednega vira, optimizatorja in parametra $P$ določimo portfelj, ki ga držimo do naslednjega odločitvenega trenutka. Njegov donos nato izračunamo iz dejansko realiziranih kasnejših cen. Če eksperimentalni protokol zahteva ponovno učenje, model v predpisanih trenutkih naučimo znova samo na takrat razpoložljivih podatkih.
-
-Takšen postopek preprečuje uhajanje prihodnjih informacij in omogoča primerjavo metod v razmerah, ki približujejo dejansko zaporedno sprejemanje naložbenih odločitev.
-
-Napovedni in optimizacijski del poleg tega ovrednotimo tudi neodvisno. Kakovost samih napovedi preverimo na presečnem napovednem protokolu, optimizatorja pa na standardnih testnih primerih OR-Library~\cite{beasley1990}, kjer dobljene rešitve primerjamo z referenčnimi rezultati po postopku Changa in sod.~\cite{chang2000}. Rezultati obeh preverjanj so podani pred vrednotenjem celotnega cevovoda.
+\paragraph{Ločeno vrednotenje obeh delov.} Napovedni in optimizacijski del poleg tega ovrednotimo tudi neodvisno. Kakovost samih napovedi preverimo na presečnem napovednem protokolu, optimizatorja pa na standardnih testnih primerih OR-Library~\cite{beasley1990}, kjer dobljene rešitve primerjamo z referenčnimi rezultati po postopku Changa in sod.~\cite{chang2000}. Rezultati obeh preverjanj so podani pred vrednotenjem celotnega cevovoda.
 
 
 % ------------------------------------------------------------
@@ -651,7 +573,7 @@ PatchTST &
 vhodno okno 336; dolžina časovnega odseka 16; korak 8;
 $D=128$; $F=256$; 3 kodirne plasti; 16 glav pozornosti;
 osip 0,2; velikost učnega paketa 32; hitrost učenja $10^{-4}$;
-največ 100 epoh; potrpežljivost 10; vključena RevIN in
+največ 100 epoh; potrpežljivost 10; vključena RevIN~\cite{kim2022revin} in
 rezidualna pozornost. \\
 \end{tabular}
 \end{table}
@@ -732,7 +654,7 @@ Naj bo $\mathcal{I}_t$ množica sredstev, za katera v času $t$ primerjamo napov
 \left(
 \{\hat{\mu}_{i,t}\}_{i\in\mathcal I_t},
 \{r_{i,t}^{(H)}\}_{i\in\mathcal I_t}
-\right).
+\right),
 \end{aligned}
 \end{equation}
 
@@ -853,7 +775,7 @@ Dolgoročni vlagatelj & 2005--2010 & 2011--2024    & letna              & 21  & 
 
 Preden vključimo optimizator, preverimo, ali modeli sploh vsebujejo koristni napovedni signal. Vprašanje je preprosto: ali napovedi transformerjev o prihodnjih donosih sploh korelirajo z dejansko realiziranimi donosi?
 
-Testni scenarij: 494 delnic indeksa S\&P~500, učenje 2018--2020, preizkus v letu 2021, napovedno obzorje pet dni. Vsak dan napovedujemo donose za vsa sredstva hkrati in primerjamo napovedi z realiziranimi vrednostmi. Ker nas zanima presečna kakovost (katere delnice model pravilno razvrsti glede na donos), merimo IC in RankIC, ki sta definirani v razdelku~\ref{sec:metrics}. Optimizator tu sploh ni vključen.
+Testni scenarij: 494 sredstev indeksa S\&P~500, učenje 2018--2020, preizkus v letu 2021, napovedno obzorje pet dni. Vsak dan napovedujemo donose za vsa sredstva hkrati in primerjamo napovedi z realiziranimi vrednostmi. Ker nas zanima presečna kakovost (katera sredstva model pravilno razvrsti glede na donos), merimo IC in RankIC, ki sta definirani v razdelku~\ref{sec:metrics}. Optimizator tu sploh ni vključen.
 
 \begin{table}[htbp]
 \centering
@@ -887,7 +809,7 @@ Testni scenarij: pet standardnih primerov zbirke OR-Library~\cite{beasley1990}: 
 
 \begin{table}[htbp]
 \centering
-\begin{minipage}[t]{0.55\linewidth}
+\begin{minipage}[t]{\linewidth}
 \vspace{0pt}
 \centering
 \caption{Standardna odstotna napaka (\%) kardinalno omejene fronte glede na USEF na primerih OR-Library.}
@@ -907,15 +829,15 @@ Nikkei (225)    & 1,96 & 1,33 & 0,61 & 0,60 \\
 Povprečje        & 2,23 & 1,63 & 1,86 & 1,34 \\
 \hline
 \end{tabular}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.42\linewidth}
-\vspace{0pt}
-\centering
-\includegraphics[width=\linewidth]{fig/orlib_frontier_sp100.pdf}
-\captionof{figure}{Kardinalno omejena fronta na primeru S\&P~100: RD in SO v primerjavi z neomejeno fronto (USEF); vsaka točka predstavlja eno vrednost parametra tveganja.}
-\label{fig:orlib}
 \end{minipage}
 \end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=\figheight]{fig/orlib_frontier_sp100.pdf}
+\caption{Kardinalno omejena fronta na primeru S\&P~100: RD in SO v primerjavi z neomejeno fronto (USEF); vsaka točka predstavlja eno vrednost parametra tveganja.}
+\label{fig:orlib}
+\end{figure}
 
 Tabela~\ref{tab:orlib} kaže, da oba optimizatorja dosegata rešitve blizu objavljene neomejene fronte. Povprečna odstotna napaka je pri večini primerov pod $3\,\%$, mediana pa je pri obeh algoritmih v povprečju nižja od $2\,\%$. SO ima nekoliko nižjo skupno povprečno in mediansko napako kot RD, vendar prednost ni enaka pri vseh instancah.
 
@@ -963,7 +885,7 @@ Gibanje vrednosti posameznih portfeljev skozi to obdobje prikazuje Slika~\ref{fi
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.6\linewidth]{fig/equity_all_leow_allweather.pdf}
+\includegraphics[height=\figheight]{fig/equity_all_leow_allweather.pdf}
 \caption{Gibanje vrednosti portfelja All-Weather med COVID-19 zlomom (protokol Leow in sod., bruto). Vsak model je prikazan pri ujemajočem $P$ iz Tabele~\ref{tab:leow}.}
 \label{fig:leow}
 \end{figure}
@@ -999,7 +921,7 @@ Wang: napovej-in (CardNN-GS)     & 0{,}400 & 0{,}188 & $1{,}968$ & -- \\
 
 \textbf{Rezultati.} Naš cevovod se objavljenim metodam dobro primerja. TFT doseže Sharpe $\WangTFT$, tik pred njim PatchTST z $\WangPatchTST$; oba se uvrstita med Wangov pristop \enquote{napovej, nato optimiziraj} (LSTM+Gurobi, $1{,}08$) in njihov enkratni nevronski reševalnik CardNN-GS ($1{,}97$), ki neposredno maksimizira Sharpov količnik. Komercialni Gurobi pri njih uporabljata prav primerjalni metodi (zgodovinska in \enquote{napovej, nato optimiziraj}), medtem ko ga CardNN-GS nadomesti. Pri tem je naš letni donos ($\WangTFTRet$) skoraj enak CardNN-GS ($0{,}400$), a ob občutno višjem realiziranem tveganju ($\WangTFTRisk$ proti $0{,}188$): del razlike v Sharpovem količniku torej ni posledica boljših napovedi, temveč večje izpostavljenosti.
 
-Dva rezultata je treba navesti odkrito. Prvič, MASTER s Sharpom $\WangMASTER$ ostaja najšibkejši od treh transformerjev v tem protokolu, čeprav svojo ujemajočo osnovno linijo ($\WangHistoricalMASTER$) prekaša le za $\WangMarginMASTER$; njegova prednost pred zgodovino je torej postranska in bistveno manjša kot pri TFT in PatchTST. Drugič, sama zgodovinska osnovna linija čez \WangWindowPatchTST{} dni doseže Sharpe $\WangHistoricalPatchTST$ in s tem prekaša Wangov LSTM+Gurobi ($1{,}08$) -- brez vsakršnega napovednega modela. Razpon osnovnih linij ($\WangHistoricalMASTER$, $\WangHistoricalTFT$, $\WangHistoricalPatchTST$ pri \WangWindowMASTER, \WangWindowTFT{} in \WangWindowPatchTST{} dneh) je primerljiv z razponom med modeli, kar pomeni, da dolžina okna v tem protokolu opravi približno toliko dela kot izbira napovednika.
+Dva rezultata je treba navesti odkrito. Prvič, MASTER s Sharpom $\WangMASTER$ ostaja najšibkejši od treh transformerjev v tem protokolu, čeprav svojo ujemajočo osnovno linijo ($\WangHistoricalMASTER$) prekaša le za $\WangMarginMASTER$; njegova prednost pred zgodovino je torej postranska in bistveno manjša kot pri TFT in PatchTST\@. Drugič, sama zgodovinska osnovna linija čez \WangWindowPatchTST{} dni doseže Sharpe $\WangHistoricalPatchTST$ in s tem prekaša Wangov LSTM+Gurobi ($1{,}08$) -- brez vsakršnega napovednega modela. Razpon osnovnih linij ($\WangHistoricalMASTER$, $\WangHistoricalTFT$, $\WangHistoricalPatchTST$ pri \WangWindowMASTER, \WangWindowTFT{} in \WangWindowPatchTST{} dneh) je primerljiv z razponom med modeli, kar pomeni, da dolžina okna v tem protokolu opravi približno toliko dela kot izbira napovednika.
 
 Skupna ugotovitev je zato zadržana: odprtokodna metahevristična optimizacija s standardno ciljno funkcijo povprečje--varianca dosega kakovost v razredu specializiranih nevronskih reševalcev brez potrebe po komercialni infrastrukturi, vendar protokol s sedmimi odločitvami in $83\,\%$ prekrivanjem obdobij držanja (kar ustreza približno dvema neodvisnima opazovanjema) ne dopušča razvrstitve med posameznimi napovedniki.
 
@@ -1011,13 +933,13 @@ Skupna ugotovitev je zato zadržana: odprtokodna metahevristična optimizacija s
 
 Aprea in Sbaiz~\cite{aprea2026} predlagajo globoko naučen pristop k izbiri portfelja, ki namesto variance kot mere tveganja minimizira agregiran $\Delta$CoVaR (sistemsko tveganje, ocenjeno z LSTM) ob dodatnih omejitvah ESG, prometa in minimalnega donosa. Nastali nekonveksni problem rešujejo z izboljšanim rojenjem delcev, pri katerem parametre roja ($w$, $c_1$, $c_2$) sproti prilagaja nevronska mreža, omejitve pa obravnavajo s projekcijo na proračunsko simpleks in kazensko funkcijo. Njihova ciljna funkcija in omejitve so torej bistveno drugačne od našega povprečje--variančnega kriterija, zato gre za primerjavo metod na skupnih naknadno izračunanih merah (Sharpov količnik, letni donos), ne za replikacijo; skupna pa je izbira rojenja delcev kot reševalnika.
 
-\textbf{Testni scenarij.} Prevzamemo njihov univerzum 28 delnic indeksa DJIA (poravnan z njihovim investicijskim naborom na presečni datum 31.\,12.\,2020, rekonstruiran iz javno dostopnih cen) in njihovo časovno shemo: učenje na obdobju 2007--2015, mesečno odločanje v obdobju 2016--2020 (60 razporeditev; njun $T_f{=}59$ šteje ponovna uravnoteženja po začetni razporeditvi) in $w_{\max}{=}0{,}2$ (zgornja meja uteži, skladna z eno od dveh mej Aprea in sod.). Kardinalnost $K{=}10$ je \emph{naš} dodatek: njun model kardinalne omejitve ne vsebuje -- njune omejitve so proračunska, intervalna ($x_i \in [l_i,u_i]$), ESG, prometna in minimalni donos, brez binarnih spremenljivk. Število pozicij pri njih ni nastavitev, temveč posledica intervalne meje: zadnja vrstica njunih tabel~7 in~8 poroča \emph{povprečno} število sredstev z neničelno utežjo zunaj vzorca, in to je $10$ pri $u_i{=}0{,}2$ ter $16$ pri $u_i{=}0{,}06$, torej $\lfloor 1/u_i \rfloor$. Naš $K{=}10$ pri $w_{\max}{=}0{,}2$ tako eksplicitno predpiše prav tisto število pozicij, ki pri njiju nastane samo od sebe. Njihova omejitev prometa ($\leq 0{,}2$ na odločitev), omejitev ESG in kriterij minimalnega donosa v našem cevovodu niso implementirani, zato je neposredna primerjava s to referenco zgolj usmeritvena.
+\textbf{Testni scenarij.} Prevzamemo njihov univerzum 28 sredstev indeksa DJIA (poravnan z njihovim investicijskim naborom na presečni datum 31.\,12.\,2020, rekonstruiran iz javno dostopnih cen) in njihovo časovno shemo: učenje na obdobju 2007--2015, mesečno odločanje v obdobju 2016--2020 (60 razporeditev; njun $T_f{=}59$ šteje ponovna uravnoteženja po začetni razporeditvi) in $w_{\max}{=}0{,}2$ (zgornja meja uteži, skladna z eno od dveh mej Aprea in sod.). Kardinalnost $K{=}10$ je \emph{naš} dodatek: njun model kardinalne omejitve ne vsebuje -- njune omejitve so proračunska, intervalna ($x_i \in [l_i,u_i]$), ESG, prometna in minimalni donos, brez binarnih spremenljivk. Število pozicij pri njih ni nastavitev, temveč posledica intervalne meje: zadnja vrstica njunih tabel~7 in~8 poroča \emph{povprečno} število sredstev z neničelno utežjo zunaj vzorca, in to je $10$ pri $u_i{=}0{,}2$ ter $16$ pri $u_i{=}0{,}06$, torej $\lfloor 1/u_i \rfloor$. Naš $K{=}10$ pri $w_{\max}{=}0{,}2$ tako eksplicitno predpiše prav tisto število pozicij, ki pri njiju nastane samo od sebe. Njihova omejitev prometa ($\leq 0{,}2$ na odločitev), omejitev ESG in kriterij minimalnega donosa v našem cevovodu niso implementirani, zato je neposredna primerjava s to referenco zgolj usmeritvena.
 
 
 
 \begin{table}[htbp]
 \centering
-\caption{Primerjava z delom Aprea in Sbaiz~\cite{aprea2026} na univerzumu DJIA (28 delnic, 2016--2020, 60 mesečnih odločitev, $K{=}10$, $P{=}0{,}5$, optimizator RD, bruto).}
+\caption{Primerjava z delom Aprea in Sbaiz~\cite{aprea2026} na univerzumu DJIA (28 sredstev, 2016--2020, 60 mesečnih odločitev, $K{=}10$, $P{=}0{,}5$, optimizator RD, bruto).}
 \label{tab:apreadjia}
 \begin{tabular}{lrrr}
 \hline
@@ -1037,7 +959,7 @@ Aprea in Sbaiz: B$^+$ ($p{=}1\,\%$, $u_i{=}0{,}2$) & $20{,}8\,\%$ & $5{,}0\,\%$\
 \footnotetext[2]{Letno normalizirana vrednost njihovega mesečnega periodnega Sharpa ($0{,}3502 \times \sqrt{12}$); minimizira $\Delta$CoVaR, ne variance, zato je primerjava zgolj usmeritvena.}
 \end{table}
 
-\textbf{Rezultati.} Na tem naboru vsi trije transformerji presežejo svojo ujemajočo zgodovinsko osnovno linijo. PatchTST doseže najvišji Sharpe ($1{,}09$ proti $0{,}80$ za osnovno linijo čez 336 dni) in edini preseže tudi Apreovo referenco ($1{,}21$ letno normalizirano), čeprav ob občutno višji volatilnosti -- njihov model eksplicitno minimizira tveganje (sistemsko, ne variančno), naš pa ga uravnoteži z donosom pri $P{=}0{,}5$. TFT ($0{,}79$ proti $0{,}64$) in MASTER ($0{,}76$ proti $0{,}75$, komaj) prav tako presežeta svoji osnovni liniji, a z manjšo razliko; MASTER je tu na robu. Noben od treh ne doseže Apreove referenčne volatilnosti niti pri sami metodologiji ($\Delta$CoVaR proti varianci, brez omejitve prometa), zato branje te tabele ostaja usmeritveno.
+\textbf{Rezultati.} Rezultate zbira Tabela~\ref{tab:apreadjia}. Na tem naboru vsi trije transformerji presežejo svojo ujemajočo zgodovinsko osnovno linijo. PatchTST doseže najvišji Sharpe ($1{,}09$ proti $0{,}80$ za osnovno linijo čez 336 dni) in edini preseže tudi Apreovo referenco ($1{,}21$ letno normalizirano), čeprav ob občutno višji volatilnosti -- njihov model eksplicitno minimizira tveganje (sistemsko, ne variančno), naš pa ga uravnoteži z donosom pri $P{=}0{,}5$. TFT ($0{,}79$ proti $0{,}64$) in MASTER ($0{,}76$ proti $0{,}75$, komaj) prav tako presežeta svoji osnovni liniji, a z manjšo razliko; MASTER je tu na robu. Noben od treh ne doseže Apreove referenčne volatilnosti niti pri sami metodologiji ($\Delta$CoVaR proti varianci, brez omejitve prometa), zato branje te tabele ostaja usmeritveno.
 
 % ------------------------------------------------------------
 % APREA NASDAQ100
@@ -1045,13 +967,13 @@ Aprea in Sbaiz: B$^+$ ($p{=}1\,\%$, $u_i{=}0{,}2$) & $20{,}8\,\%$ & $5{,}0\,\%$\
 
 \subsection{Zunanja primerjava z delom Aprea in Sbaiz: NASDAQ~100}\label{sec:aprea-nasdaq}
 
-Isti protokol Aprea in Sbaiz~\cite{aprea2026} ponovimo na njihovem večjem univerzumu 54 delnic indeksa NASDAQ~100 (poravnanem z njihovim polnozgodovinskim naborom), da preverimo, ali se ugotovitve iz razdelka~\ref{sec:aprea-djia} prenesejo na širši, bolj tehnološko nagnjen nabor sredstev. Nastavitve (obdobje, $K{=}10$, $w_{\max}{=}0{,}2$, 60 mesečnih odločitev) so sicer enake kot pri DJIA.
+Isti protokol Aprea in Sbaiz~\cite{aprea2026} ponovimo na njihovem večjem univerzumu 54 sredstev indeksa NASDAQ~100 (poravnanem z njihovim polnozgodovinskim naborom), da preverimo, ali se ugotovitve iz razdelka~\ref{sec:aprea-djia} prenesejo na širši, bolj tehnološko nagnjen nabor sredstev. Nastavitve (obdobje, $K{=}10$, $w_{\max}{=}0{,}2$, 60 mesečnih odločitev) so sicer enake kot pri DJIA.
 
 
 
 \begin{table}[htbp]
 \centering
-\caption{Primerjava z delom Aprea in Sbaiz~\cite{aprea2026} na univerzumu NASDAQ~100 (54 delnic, 2016--2020, 60 mesečnih odločitev, $K{=}10$, $P{=}0{,}5$, optimizator RD, bruto).}
+\caption{Primerjava z delom Aprea in Sbaiz~\cite{aprea2026} na univerzumu NASDAQ~100 (54 sredstev, 2016--2020, 60 mesečnih odločitev, $K{=}10$, $P{=}0{,}5$, optimizator RD, bruto).}
 \label{tab:aprealndaq}
 \begin{tabular}{lrrr}
 \hline
@@ -1081,7 +1003,7 @@ Aprea in Sbaiz: B$^+$ ($p{=}1\,\%$, $u_i{=}0{,}2$) & $22{,}9\,\%$ & $6{,}3\,\%$\
 
 Predhodne primerjave preverijo cevovod v protokolih obstoječih študij. Kot zadnji korak izvedemo scenarij, ki ga sami oblikujemo za preverbo dolgoročnega vedenja: ali transformerski signal ostaja koristen prek daljšega obdobja z večimi tržnimi razmerami, ne le v kratkem kriznem oknu?
 
-\textbf{Testni scenarij.} Testiramo na univerzumu velikih ameriških delnic v obdobju 2011--2024 z letnim preučevanjem (12 odločitev). Ker scenarij ni vezan na referenčno študijo, referenčna točka je naš lasten zgodovinski pristop in pasivni indeks S\&P~500 (dodan kot ločena, nemodelirana referenca; ker nima prometa, velja bruto = neto). Opozorilo: univerzum vsebuje samo delnice, ki so preživele celotno obdobje (survivorship bias), zato so absolutni rezultati navzgor pristrani; primerjava med napovednimi pristopi je kljub temu neposredna, saj vsi delijo isti rekonstruirani univerzum. Tabela~\ref{tab:longterm} poroča bruto in neto mere, kjer neto upošteva 10 bazičnih točk (b.t.) stroška na enoto letnega prometa (L1 uteži) -- standardna groba ocena transakcijskih stroškov za likvidne ameriške delnice.
+\textbf{Testni scenarij.} Testiramo na univerzumu velikih ameriških sredstev v obdobju 2011--2024 z letnim preučevanjem (12 odločitev). Ker scenarij ni vezan na referenčno študijo, referenčna točka je naš lasten zgodovinski pristop in pasivni indeks S\&P~500 (dodan kot ločena, nemodelirana referenca; ker nima prometa, velja bruto = neto). Opozorilo: univerzum vsebuje samo sredstva, ki so preživela celotno obdobje (survivorship bias), zato so absolutni rezultati navzgor pristrani; primerjava med napovednimi pristopi je kljub temu neposredna, saj vsi delijo isti rekonstruirani univerzum. Tabela~\ref{tab:longterm} poroča bruto in neto mere, kjer neto upošteva 10 bazičnih točk (b.t.) stroška na enoto letnega prometa (L1 uteži) -- standardna groba ocena transakcijskih stroškov za likvidna ameriška sredstva.
 
 
 
@@ -1114,15 +1036,9 @@ S\&P~500 (indeks)         & $12{,}1\,\%$ & 0,85 & $12{,}1\,\%$ & 0,85 & $0{,}0\,
 
 \begin{figure}[htbp]
 \centering
-\begin{minipage}{0.49\linewidth}
-\centering
-\includegraphics[width=\linewidth]{fig/equity_all_longterm.pdf}
-\end{minipage}\hfill
-\begin{minipage}{0.49\linewidth}
-\centering
-\includegraphics[width=\linewidth]{fig/equity_all_longterm_net.pdf}
-\end{minipage}
-\caption{Gibanje vrednosti portfelja v dolgoročnem scenariju (2011--2024, $P{=}0{,}5$): bruto (levo) in neto pri 10 b.t.\ (desno). Prisoten je survivorship bias.}
+\includegraphics[height=\figheight]{fig/equity_all_longterm.pdf}\\[6pt]
+\includegraphics[height=\figheight]{fig/equity_all_longterm_net.pdf}
+\caption{Gibanje vrednosti portfelja v dolgoročnem scenariju (2011--2024, $P{=}0{,}5$): bruto (zgoraj) in neto pri 10 b.t.\ (spodaj). Prisoten je survivorship bias.}
 \label{fig:longterm}
 \end{figure}
 
@@ -1164,7 +1080,7 @@ V magistrskem delu smo zasnovali cevovod za sestavo kardinalno omejenega portfel
 
 Iskanje uteži ob striktni kardinalni omejitvi rešujeta dve stohastični metahevristiki, rojenje delcev in simulirano ohlajanje. Obe rešujeta isti KONP in uporabljata isto ciljno funkcijo ter iste omejitve, razlikujeta pa se v strategiji preiskovanja prostora rešitev. Kakovost optimizacijskega dela preverjamo ločeno na standardnih problemih OR-Library, napovedni del pa na ločenem presečnem protokolu. Šele nato oba dela povežemo v postopno vrednotenje zunaj vzorca.
 
-Pomemben metodološki vidik dela je sledljivost implementacij. PatchTST uporablja uradni \texttt{PatchTST\_backbone}, TFT odprtokodno knjižnico \texttt{pytorch-forecasting}, MASTER pa izvorno arhitekturo avtorjev. Namestitvene skripte zabeležijo uporabljene revizije Git, zato je mogoče poleg nastavitev eksperimenta določiti tudi konkretno programsko različico posameznega modela. Pri metodah, ki jih zaradi drugačnega trga ali drugačne formulacije optimizacijskega problema ni mogoče dobesedno prenesti, prilagoditve eksplicitno opišemo.
+Pomemben metodološki vidik dela je sledljivost implementacij. PatchTST uporablja uradni \texttt{PatchTST\_backbone}, TFT odprtokodno knjižnico \texttt{pytorch-forecasting}~\cite{beitner2020pytorch}, MASTER pa izvorno arhitekturo avtorjev. Namestitvene skripte zabeležijo uporabljene revizije Git, zato je mogoče poleg nastavitev eksperimenta določiti tudi konkretno programsko različico posameznega modela. Pri metodah, ki jih zaradi drugačnega trga ali drugačne formulacije optimizacijskega problema ni mogoče dobesedno prenesti, prilagoditve eksplicitno opišemo.
 
 Transformerski napovedni signal pozitivno vpliva na vrednost portfelja, a ne prek enega samega, dosledno najboljšega modela. TFT doseže najvišji Sharpov količnik v kriznem obdobju Leow All-Weather ($\LeowAWTFT$ proti $\LeowAWHistoricalTFT$ za ujemajočo osnovno linijo) in preseže svojo osnovno linijo tudi v dolgoročnem scenariju; PatchTST doseže najvišji absolutni Sharpe v dolgoročnem scenariju ($1{,}38$ proti $1{,}10$ za svojo osnovno linijo) in na naboru Aprea DJIA ($1{,}09$ proti $0{,}80$); MASTER pa je edini, ki jasno preseže svojo osnovno linijo na večjem naboru Aprea NASDAQ~100 ($1{,}23$ proti $1{,}03$), kjer TFT nasprotno izrazito zaostane ($0{,}55$ proti $0{,}94$). Pri Wangu sta TFT in PatchTST primerljiva ($\WangTFT$ oziroma $\WangPatchTST$) in se oba uvrstita med Wangov pristop \enquote{napovej, nato optimiziraj} in nevronski reševalnik CardNN-GS, ki komercialni reševalnik nadomesti z naučeno plastjo. Ključna ugotovitev, ki drži v vseh petih benchmarkih (Leow, Wang, Aprea DJIA, Aprea NASDAQ~100, dolgoročni scenarij), je, da v vsakem od njih \emph{vsaj en} transformer jasno preseže svojo ujemajočo zgodovinsko osnovno linijo -- kateri model to je, pa se sistematično menja z univerzumom in protokolom, kar kaže, da izbira napovednega modela ni univerzalna odločitev, temveč je odvisna od konteksta uporabe. Razlike med rojénjem delcev in simuliranim ohlajanjem so ob tem majhne in nekonsistentne prek scenarijev, kar kaže, da je kakovost napovednega signala~$\hat{\vec{\mu}}$ dominantni dejavnik portfeljske uspešnosti, ne izbira optimizatorja.
 
