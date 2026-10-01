@@ -142,8 +142,8 @@ def task_orlib(argv=None):
 
     # Style map (previously imported from the deleted benchmark_report.ALGO_STYLE).
     ALGO_STYLE = {
-        "pso": {"color": "tab:red",   "label": "PSO"},
-        "sa":  {"color": "tab:green", "label": "SA"},
+        "pso": {"color": "tab:red",   "label": "RD"},
+        "sa":  {"color": "tab:green", "label": "SO"},
     }
 
     RESULTS_DIR = os.path.join(ROOT, "test_results")
@@ -290,7 +290,8 @@ def task_orlib(argv=None):
             ax.legend(fontsize=8, loc="lower right")
             ax.grid(alpha=0.3)
             p = os.path.join(RESULTS_DIR, f"orlib_frontier_{ds}.png")
-            fig.tight_layout(); fig.savefig(p, dpi=150); plt.close(fig)
+            fig.tight_layout(); fig.savefig(p, dpi=150)
+            fig.savefig(p[:-4] + ".pdf"); plt.close(fig)
             print(f"  Graf: {p}")
 
     main()

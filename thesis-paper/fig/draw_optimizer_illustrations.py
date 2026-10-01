@@ -47,10 +47,22 @@ def bracket(ax, pos, q, y_br, label, col='#555555'):
 # =============================================================================
 # PSO – 4 panels: Iteracija 1 · Iteracija 2 · Iteracija t · Konvergenca
 # =============================================================================
+# Dejanska ciljna funkcija KONP iz enačbe~\eqref{eq:solver-objective}:
+#   g(w) = (1-P) w^T Sigma w - P mu^T w,
+# ovrednotena na reprezentativnem paru sredstev (P=0.5), tako da izolinije
+# prikazujejo pravo konveksno povprečje--varianca ploskev.
+SIGMA_ILLUS = np.array([[0.0625, 0.0225],
+                        [0.0225, 0.0900]])
+MU_ILLUS = np.array([0.1161, 0.1368])
+P_ILLUS = 0.5
+
+
 def landscape(x, y):
-    return (0.50*(x-0.72)**2 + 0.80*(y-0.58)**2
-            + 0.35*np.exp(-12*((x-0.22)**2+(y-0.78)**2))
-            + 0.25*np.exp(-10*((x-0.82)**2+(y-0.18)**2)))
+    risk = (SIGMA_ILLUS[0, 0]*x**2
+            + 2*SIGMA_ILLUS[0, 1]*x*y
+            + SIGMA_ILLUS[1, 1]*y**2)
+    ret = MU_ILLUS[0]*x + MU_ILLUS[1]*y
+    return (1 - P_ILLUS)*risk - P_ILLUS*ret
 
 gx = np.linspace(0, 1, 220);  gy = np.linspace(0, 1, 220)
 GX, GY = np.meshgrid(gx, gy);  GZ = landscape(GX, GY)
@@ -105,7 +117,7 @@ for col, (ax, title, tcol) in enumerate(zip(axes, PSO_TITLES, PSO_TCOLS)):
     ax.contourf(GX, GY, GZ, levels=10, cmap='Blues_r', alpha=0.40, zorder=0)
     cs = ax.contour(GX, GY, GZ, levels=10, colors='#1565C0',
                     linewidths=0.25, alpha=0.32, zorder=1)
-    ax.clabel(cs, cs.levels[2:-2:3], fmt='%.2f', fontsize=4.0,
+    ax.clabel(cs, cs.levels[2:-2:3], fmt='%.3f', fontsize=4.0,
               colors='#1565C0', inline=True, inline_spacing=1)
 
     pts = SW[col]
@@ -179,7 +191,7 @@ for col, (ax, title, tcol) in enumerate(zip(axes, PSO_TITLES, PSO_TCOLS)):
 
     # contour label in panel 0 only
     if col == 0:
-        ax.text(0.50, 0.03, 'izolinije: $f(\\vec{w})=-$Sharpe',
+        ax.text(0.50, 0.03, 'izolinije: ciljna funkcija $g(\\vec{w})$',
                 ha='center', va='bottom', fontsize=5.0,
                 color='#1565C0', transform=ax.transAxes, zorder=9)
 
@@ -187,7 +199,7 @@ for col, (ax, title, tcol) in enumerate(zip(axes, PSO_TITLES, PSO_TCOLS)):
     ax.set_xticks([]);   ax.set_yticks([])
     ax.set_title(title, fontsize=7.0, pad=5, color=tcol)
     if col == 0:
-        ax.set_ylabel('$f(\\vec{w})$', fontsize=6.5, labelpad=3)
+        ax.set_ylabel('$g(\\vec{w})$', fontsize=6.5, labelpad=3)
     if col == 1:
         ax.set_xlabel('Utež $w_i$ / $w_j$  (2D prikaz)', fontsize=6.0, labelpad=3)
     ax.spines['top'].set_visible(False);  ax.spines['right'].set_visible(False)
@@ -224,6 +236,10 @@ print('OK  optimizer_pso_illus.pdf')
 #   MIDDLE y in [0, Y_STRIP-0.10]         landscape + arcs
 #   BOTTOM y in [Y_BR-0.20, 0]            radius bracket + label
 # =============================================================================
+# Qualitative 1D stand-in for the KONP objective g(w) from
+# eq:solver-objective: not the literal quadratic form, but shaped with
+# several local optima so the figure can show SA escaping one before settling
+# near the global optimum (star).
 def curve1d(x):
     return (0.55*np.sin(3.5*x) + 0.38*np.sin(7*x)
             + 1.1*(x - 0.65)**2 + 0.35)
@@ -327,7 +343,7 @@ for col, (ax, st) in enumerate(zip(axes, stages)):
     ax.set_xticks([]);   ax.set_yticks([])
     ax.set_title(st['label'], fontsize=6.8, pad=5, color=st['T_col'])
     if col == 0:
-        ax.set_ylabel('$f(\\vec{w})$ = $-$Sharpe', fontsize=6.5, labelpad=3)
+        ax.set_ylabel('$g(\\vec{w})$', fontsize=6.5, labelpad=3)
     if col == 1:
         ax.set_xlabel('Portfelj $\\vec{w}$', fontsize=6.5, labelpad=3)
     ax.spines['top'].set_visible(False);  ax.spines['right'].set_visible(False)

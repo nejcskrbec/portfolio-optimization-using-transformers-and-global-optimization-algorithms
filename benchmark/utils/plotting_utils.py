@@ -18,7 +18,7 @@ from benchmark.utils.benchmark_utils import ROOT
 # Shared palette for the equity-curve task
 # ---------------------------------------------------------------------------
 _MODEL_STYLE = {
-    "Historical": ("tab:gray",   "-",  "Zgodovinski"),
+    "Historical": ("tab:gray",   "-",  "Zgodovinsko povprečje"),
     "TFT":        ("tab:orange", "-",  "TFT"),
     "PatchTST":   ("tab:blue",   "-",  "PatchTST"),
     "MASTER":     ("tab:green",  "-",  "MASTER"),
@@ -35,7 +35,7 @@ def _model_style(model: str):
     if model in _MODEL_STYLE:
         return _MODEL_STYLE[model]
     if model.startswith("Historical@"):
-        return ("tab:gray", "-", "Zgodovinski@" + model.split("@", 1)[1])
+        return ("tab:gray", "-", "Zgodovinsko povprečje@" + model.split("@", 1)[1])
     return ("tab:red", "-", model)
 
 
@@ -172,11 +172,12 @@ def task_equity_curves_all(argv=None):
 def task_pipeline_schema(argv=None):
     """Vector schematic of the end-to-end pipeline used in the thesis body.
 
-    Replaces the former raster ``fig/pipeline.png``. Six numbered stages, drawn
+    Replaces the former raster ``fig/pipeline.png``. Seven numbered stages, drawn
     as a single walk-forward cycle: the mu branch (neural model) and the Sigma
-    branch (sample covariance) run in parallel off the same history, meet in the
-    CCMV solver, and the realised return of the held portfolio feeds the
-    out-of-sample metrics before the window advances.
+    branch (sample covariance) run in parallel off the same history, are put on
+    a common scale by the standardization step, meet in the CCMV solver, and the
+    realised return of the held portfolio feeds the out-of-sample metrics before
+    the window advances.
 
     Two language variants share this one drawing routine:
 
@@ -202,8 +203,9 @@ def task_pipeline_schema(argv=None):
             "data":  "Zgodovinski\ntržni podatki\ndo $t$",
             "mu":    "Napovedni model\n(PatchTST / TFT / MASTER)",
             "cov":   "Ocena kovariančne\nmatrike",
+            "std":   "Standardizacija\n$\\hat{\\vec{\\mu}}_t \\to \\tilde{\\mu}_t$ ($z$-vrednosti)\n$\\hat{\\vec{\\Sigma}}_t \\to \\tilde{\\Sigma}_t$ (deljenje z $\\bar d_t$)",
             "opt":   "Optimizator KONP\n(RD / SO)",
-            "hold":  "Držanje portfelja\n$[t{+}1,\\,t{+}H]$",
+            "hold":  "Portfelj v\nnapovednem obdobju\n$[t{+}1,\\,t{+}H]$",
             "eval":  "Zunajvzorčne mere\nuspešnosti",
             "ret":   "realizirani donos",
             "loop":  r"pomik okna: $t \leftarrow t+H$",
@@ -212,8 +214,9 @@ def task_pipeline_schema(argv=None):
             "data":  "Historical\nmarket data\nup to $t$",
             "mu":    "Forecasting model\n(PatchTST / TFT / MASTER)",
             "cov":   "Covariance matrix\nestimate",
+            "std":   "Standardization\n$\\hat{\\vec{\\mu}}_t \\to \\tilde{\\mu}_t$ ($z$-scores)\n$\\hat{\\vec{\\Sigma}}_t \\to \\tilde{\\Sigma}_t$ (divide by $\\bar d_t$)",
             "opt":   "CCMV optimizer\n(PSO / SA)",
-            "hold":  "Hold portfolio\n$[t{+}1,\\,t{+}H]$",
+            "hold":  "Portfolio over the\nforecast period\n$[t{+}1,\\,t{+}H]$",
             "eval":  "Out-of-sample\nperformance metrics",
             "ret":   "realised return",
             "loop":  r"window advances: $t \leftarrow t+H$",
@@ -231,16 +234,18 @@ def task_pipeline_schema(argv=None):
     C_DATA, C_MU, C_COV, C_OPT, C_HOLD, C_EVAL = (
         "0.45", "tab:blue", "tab:purple", "tab:red", "tab:orange", "tab:green")
 
-    fig, ax = plt.subplots(figsize=(7.0, 2.55))
+    fig, ax = plt.subplots(figsize=(8.2, 2.55))
 
     # (x0, y0, x1, y1, roman, label, colour)
+    C_STD = "tab:cyan"
     boxes = [
-        (1, 20, 18, 34, "I", TEXT["data"], C_DATA),
-        (26, 37, 48, 51, "II", TEXT["mu"], C_MU),
-        (26, 3, 48, 17, "III", TEXT["cov"], C_COV),
-        (56, 20, 72, 34, "IV", TEXT["opt"], C_OPT),
-        (80, 20, 99, 34, "V", TEXT["hold"], C_HOLD),
-        (80, 3, 99, 17, "VI", TEXT["eval"], C_EVAL),
+        (1, 18, 18, 36, "I", TEXT["data"], C_DATA),
+        (23, 37, 47, 51, "II", TEXT["mu"], C_MU),
+        (23, 3, 47, 17, "III", TEXT["cov"], C_COV),
+        (53, 16, 76, 38, "IV", TEXT["std"], C_STD),
+        (83, 20, 101, 34, "V", TEXT["opt"], C_OPT),
+        (108, 20, 125, 34, "VI", TEXT["hold"], C_HOLD),
+        (108, 3, 125, 17, "VII", TEXT["eval"], C_EVAL),
     ]
     for x0, y0, x1, y1, roman, label, col in boxes:
         ax.add_patch(FancyBboxPatch(
@@ -266,25 +271,26 @@ def task_pipeline_schema(argv=None):
                     color="0.2", zorder=5,
                     bbox=dict(boxstyle="round,pad=0.12", fc="white", ec="none"))
 
-    arrow((26, 44), (18, 30), rad=0.12)
-    arrow((26, 10), (18, 24), rad=-0.12)
-    arrow((56, 30), (48, 44), r"$\hat{\vec{\mu}}_t$", 52.0, 40.0, rad=0.12)
-    arrow((56, 24), (48, 10), r"$\hat{\vec{\Sigma}}_t$", 52.0, 14.0, rad=-0.12)
-    arrow((80, 27), (72, 27), r"$\vec{w}_t$", 76.0, 30.5)
-    arrow((89.5, 17), (89.5, 20), TEXT["ret"], 87.5, 18.5, ha="right")
+    arrow((23, 44), (18, 31), rad=0.12)
+    arrow((23, 10), (18, 23), rad=-0.12)
+    arrow((53, 33), (47, 44), r"$\hat{\vec{\mu}}_t$", 50.0, 40.0, rad=0.12)
+    arrow((53, 21), (47, 10), r"$\hat{\vec{\Sigma}}_t$", 50.0, 14.0, rad=-0.12)
+    arrow((83, 27), (76, 27), r"$\tilde{\mu}_t,\ \tilde{\Sigma}_t$", 79.5, 31.0)
+    arrow((108, 27), (101, 27), r"$\vec{w}_t$", 104.5, 30.5)
+    arrow((116.5, 17), (116.5, 20), TEXT["ret"], 118.0, 18.5, ha="left")
 
     # Walk-forward loop: the window advances and the cycle repeats.
     Y_LOOP = 58.0
-    ax.plot([89.5, 89.5, 9.5], [34, Y_LOOP, Y_LOOP], color="0.45", lw=0.9,
+    ax.plot([116.5, 116.5, 9], [34, Y_LOOP, Y_LOOP], color="0.45", lw=0.9,
             linestyle=(0, (4, 2)), zorder=1, solid_capstyle="butt")
     ax.add_patch(FancyArrowPatch(
-        (9.5, Y_LOOP), (9.5, 34), arrowstyle="-|>", mutation_scale=9, lw=0.9,
+        (9, Y_LOOP), (9, 36), arrowstyle="-|>", mutation_scale=9, lw=0.9,
         color="0.45", linestyle=(0, (4, 2)), shrinkA=0, shrinkB=0, zorder=1))
-    ax.text(49.5, Y_LOOP, TEXT["loop"], ha="center",
+    ax.text(63, Y_LOOP, TEXT["loop"], ha="center",
             va="center", fontsize=7.0, color="0.35", style="italic",
             bbox=dict(boxstyle="round,pad=0.18", fc="white", ec="none"), zorder=5)
 
-    ax.set_xlim(-1, 101)
+    ax.set_xlim(-1, 135)
     ax.set_ylim(0, 62)
     ax.set_axis_off()
     fig.tight_layout(pad=0.2)
@@ -348,7 +354,7 @@ def task_protocol_schema(argv=None):
          [(-L, L, C_MU, 0.85, None)]),
         (1, r"Vzorčna kovarianca $\hat{\Sigma}$ ($L_{\max}$ dni)",
          [(-L_MAX, L_MAX, C_COV, 0.85, None)]),
-        (0, "Držanje portfelja ($H$ dni)",
+        (0, "Napovedno obdobje ($H$ dni)",
          [(0, H, C_HOLD, 0.95, None)]),
     ]
 

@@ -66,6 +66,8 @@ def _dur(sec: float) -> str:
     """Training/solver wall clock, in the largest sensible unit."""
     if sec is None or not np.isfinite(sec) or sec <= 0:
         return "--"
+    if sec < 1:
+        return _num(sec * 1000, 0) + r"\,ms"
     if sec < 60:
         return _num(sec, 1) + r"\,s"
     if sec < 3600:
@@ -81,8 +83,8 @@ def _display(model: str, n_baselines: int) -> str:
     """Slovenian row label; the window suffix only appears when a run has >1."""
     if _is_baseline(model):
         if n_baselines <= 1:
-            return "Zgodovinski"
-        return "Zgodovinski\\,(" + str(model).split("@", 1)[1] + "\\,dni)"
+            return "Zgodovinsko povprečje"
+        return "Zgodovinsko povprečje\\,(" + str(model).split("@", 1)[1] + "\\,dni)"
     return str(model)
 
 
@@ -149,6 +151,33 @@ def _train_detail(path: Path) -> dict:
     return out
 
 
+def _solver_seconds(path: Path, P, optimizer: str = OPTIMIZER) -> dict:
+    """model -> mean optimizer wall clock per decision (seconds).
+
+    `P` is either one risk point or a model -> P mapping (Leow reads every model
+    at its own risk-matched P). The cost is set by N, K and the solver budget,
+    not by the mu source, so it is near-identical across rows of one experiment.
+    """
+    df = pd.read_csv(path / "portfolio_summary.csv")
+    df = df[df["optimizer"].str.upper() == optimizer.upper()]
+    out = {}
+    for _, r in df.iterrows():
+        want = P.get(r["model"]) if isinstance(P, dict) else P
+        if want is not None and abs(float(r["P"]) - float(want)) < 1e-9:
+            out[str(r["model"])] = float(r["mean_solver_sec"])
+    return out
+
+
+def _ntrain(detail: dict, model: str) -> str:
+    """Number of fits behind a model's row; baselines have none."""
+    return str(detail[model][0]) if model in detail else "--"
+
+
+def _per_train(detail: dict, model: str) -> str:
+    """Wall clock of ONE fit (mean over the run's refits and seeds)."""
+    return _dur(detail[model][1]) if model in detail else "--"
+
+
 def _matched(path: Path) -> dict:
     """model -> its `Historical@<L>` row, read from the run's own output.
 
@@ -201,6 +230,10 @@ def generate_leow(P: float = 0.5) -> None:
     rm = _risk_matched(path)
     n_decisions = int(_portfolio(path, P)["n_decisions"].iloc[0])
     train = _train_seconds(path)
+    detail = _train_detail(path)
+    solve = _solver_seconds(path, rm["P"].to_dict())
+    rm_sa = _risk_matched(path, "SA")
+    solve_sa = _solver_seconds(path, rm_sa["P"].to_dict(), "SA")
     matched = _matched(path)
     n_base = sum(1 for m in rm.index if _is_baseline(m))
     pf = rm  # all per-model metrics below are read at the risk-matched point
@@ -209,12 +242,15 @@ def generate_leow(P: float = 0.5) -> None:
     for m in _order(pf.index):
         r = pf.loc[m]
         rows.append(
-            "All-Weather & {label} & {ret} & {vol} & ${sh}$ & {tr} \\\\".format(
+            "All-Weather & {label} & {ret} & {vol} & ${sh}$ & {nt} & {tr} & {op} & {os} \\\\".format(
                 label=_display(m, n_base),
-                ret=_pct(float(r["annualized_arithmetic_return"])),
+                ret=_plain_pct(float(r["annualized_arithmetic_return"])),
                 vol=_plain_pct(float(r["annualized_vol"])),
-                sh=_num(float(r["sharpe_annualized"]), 2, signed=True),
-                tr=_dur(train.get(m, float("nan"))),
+                sh=_num(float(r["sharpe_annualized"]), 2),
+                nt=_ntrain(detail, m),
+                tr=_per_train(detail, m),
+                op=_dur(solve.get(m, float("nan"))),
+                os=_dur(solve_sa.get(m, float("nan"))),
             )
         )
     _write_rows(OUT / "tab_leow_metrics_rows.tex", rows)
@@ -224,22 +260,24 @@ def generate_leow(P: float = 0.5) -> None:
     for m in pf.index:
         if _is_baseline(m):
             continue
-        macros.append(_mac(f"LeowAW{m}", _num(float(pf.loc[m, "sharpe_annualized"]), 3, True)))
-        macros.append(_mac(f"LeowAW{m}Ret", _pct(float(pf.loc[m, "annualized_arithmetic_return"]))))
+        macros.append(_mac(f"LeowAW{m}", _num(float(pf.loc[m, "sharpe_annualized"]), 2)))
+        macros.append(_mac(f"LeowAW{m}Ret", _plain_pct(float(pf.loc[m, "annualized_arithmetic_return"]))))
         base = matched.get(m)
         if base in pf.index:
             macros.append(_mac(f"LeowAWHistorical{m}",
-                               _num(float(pf.loc[base, "sharpe_annualized"]), 3, True)))
+                               _num(float(pf.loc[base, "sharpe_annualized"]), 2)))
             macros.append(_mac(f"LeowAWHistorical{m}Ret",
-                               _pct(float(pf.loc[base, "annualized_arithmetic_return"]))))
+                               _plain_pct(float(pf.loc[base, "annualized_arithmetic_return"]))))
             macros.append(_mac(f"LeowAWWindow{m}", str(base).split("@", 1)[1]))
             macros.append(_mac(f"LeowAWMargin{m}",
                                _num(float(pf.loc[m, "sharpe_annualized"])
-                                    - float(pf.loc[base, "sharpe_annualized"]), 3, True)))
+                                    - float(pf.loc[base, "sharpe_annualized"]), 2, True)))
 
     total = sum(train.values())
     macros.append(_mac("LeowAWTrainTotal", _dur(total)))
     macros.append(_mac("LeowAWDecisions", str(n_decisions)))
+    macros.append(_mac("LeowAWSolvePSO", _dur(float(np.mean(list(solve.values()))))))
+    macros.append(_mac("LeowAWSolveSA", _dur(float(np.mean(list(solve_sa.values()))))))
     for m, (n, per) in _train_detail(path).items():
         macros.append(_mac(f"LeowAWTrainPer{m}", _dur(per)))
         macros.append(_mac(f"LeowAWTrainN{m}", str(n)))
@@ -265,6 +303,9 @@ def generate_wang(optimizer: str = OPTIMIZER) -> None:
     t = t[t["optimizer"].str.upper() == optimizer.upper()]
     t = t.set_index("predictor")
     train = _train_seconds(path)
+    detail = _train_detail(path)
+    solve = _solver_seconds(path, 0.5, optimizer)
+    solve_sa = _solver_seconds(path, 0.5, "SA")
     matched = _matched(path)
     n_base = sum(1 for m in t.index if _is_baseline(m))
 
@@ -272,12 +313,15 @@ def generate_wang(optimizer: str = OPTIMIZER) -> None:
     for m in _order(t.index):
         r = t.loc[m]
         rows.append(
-            "{label} & {ret} & {risk} & ${sh}$ & {tr} \\\\".format(
+            "{label} & {ret} & {risk} & ${sh}$ & {nt} & {tr} & {op} & {os} \\\\".format(
                 label=_display(m, n_base),
-                ret=_num(float(r["ann_return"])),
-                risk=_num(float(r["ann_risk"])),
-                sh=_num(float(r["sharpe"]), 3),
-                tr=_dur(train.get(m, float("nan"))),
+                ret=_plain_pct(float(r["ann_return"])),
+                risk=_plain_pct(float(r["ann_risk"])),
+                sh=_num(float(r["sharpe"]), 2),
+                nt=_ntrain(detail, m),
+                tr=_per_train(detail, m),
+                op=_dur(solve.get(m, float("nan"))),
+                os=_dur(solve_sa.get(m, float("nan"))),
             )
         )
     _write_rows(OUT / "tab_wang_rows.tex", rows)
@@ -290,22 +334,24 @@ def generate_wang(optimizer: str = OPTIMIZER) -> None:
     for m in t.index:
         if _is_baseline(m):
             continue
-        macros.append(_mac(f"Wang{m}", _num(float(t.loc[m, "sharpe"]), 3)))
-        macros.append(_mac(f"Wang{m}Ret", _num(float(t.loc[m, "ann_return"]))))
-        macros.append(_mac(f"Wang{m}Risk", _num(float(t.loc[m, "ann_risk"]))))
+        macros.append(_mac(f"Wang{m}", _num(float(t.loc[m, "sharpe"]), 2)))
+        macros.append(_mac(f"Wang{m}Ret", _plain_pct(float(t.loc[m, "ann_return"]))))
+        macros.append(_mac(f"Wang{m}Risk", _plain_pct(float(t.loc[m, "ann_risk"]))))
     for m, base in matched.items():
         if m in t.index and base in t.index:
-            macros.append(_mac(f"WangHistorical{m}", _num(float(t.loc[base, "sharpe"]), 3)))
-            macros.append(_mac(f"WangHistorical{m}Ret", _num(float(t.loc[base, "ann_return"]))))
+            macros.append(_mac(f"WangHistorical{m}", _num(float(t.loc[base, "sharpe"]), 2)))
+            macros.append(_mac(f"WangHistorical{m}Ret", _plain_pct(float(t.loc[base, "ann_return"]))))
             macros.append(_mac(f"WangWindow{m}", str(base).split("@", 1)[1]))
             macros.append(_mac(f"WangMargin{m}",
                                _num(float(t.loc[m, "sharpe"])
-                                    - float(t.loc[base, "sharpe"]), 3, True)))
+                                    - float(t.loc[base, "sharpe"]), 2, True)))
     # sharpe_std >= sharpe for every row (83% holding-period overlap, 7
     # decisions ~ 2 independent observations) -- the caveat the prose must carry.
-    macros.append(_mac("WangSharpeStdMax", _num(float(t["sharpe_std"].max()), 3)))
-    macros.append(_mac("WangSharpeStdMin", _num(float(t["sharpe_std"].min()), 3)))
+    macros.append(_mac("WangSharpeStdMax", _num(float(t["sharpe_std"].max()), 2)))
+    macros.append(_mac("WangSharpeStdMin", _num(float(t["sharpe_std"].min()), 2)))
     macros.append(_mac("WangTrainTotal", _dur(sum(train.values()))))
+    macros.append(_mac("WangSolvePSO", _dur(float(np.mean(list(solve.values()))))))
+    macros.append(_mac("WangSolveSA", _dur(float(np.mean(list(solve_sa.values()))))))
     for m, (n, per) in _train_detail(path).items():
         macros.append(_mac(f"WangTrainPer{m}", _dur(per)))
         macros.append(_mac(f"WangTrainN{m}", str(n)))
