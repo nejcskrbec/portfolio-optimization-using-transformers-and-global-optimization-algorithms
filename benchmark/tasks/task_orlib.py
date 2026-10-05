@@ -62,38 +62,41 @@ def load_frontier(name: str, data_dir: str = ORLIB_DATA_DIR) -> np.ndarray:
     return np.column_stack([ret[order], var[order]])
 
 
-def _interp_var_at_return(frontier: np.ndarray, r: float) -> float:
-    ret, var = frontier[:, 0], frontier[:, 1]
-    if r <= ret[0]: return float(var[0])
-    if r >= ret[-1]: return float(var[-1])
-    return float(np.interp(r, ret, var))
-
-
-def _interp_return_at_var(frontier: np.ndarray, v: float) -> float:
-    ret, var = frontier[:, 0], frontier[:, 1]
-    o = np.argsort(var); var_s, ret_s = var[o], ret[o]
-    if v <= var_s[0]: return float(ret_s[0])
-    if v >= var_s[-1]: return float(ret_s[-1])
-    return float(np.interp(v, var_s, ret_s))
-
-
 def frontier_error(points: np.ndarray, frontier: np.ndarray) -> dict:
+    """Percentage deviation of portfolios from the unconstrained frontier, exactly
+    as in Chang et al. (2000), Sec. 5.2.2.
+
+    Working in (standard deviation, return) coordinates, the frontier is linearly
+    interpolated and a portfolio (x*, y*) is compared with it in both directions:
+    horizontally (x** = frontier std at return y*) and vertically (y** = frontier
+    return at std x*). The error is the smaller of |100 (x* - x**)/x**| and
+    |100 (y* - y**)/y**|. A direction with no bracketing frontier points yields no
+    value (the portfolio is skipped if neither direction does).
+    """
+    keys = ("mean", "median", "min", "max", "std", "n")
     if len(points) == 0:
-        return {k: np.nan for k in ("mean", "median", "min", "max", "std", "n")}
+        return {k: np.nan for k in keys}
+    f_ret = frontier[:, 0]
+    f_std = np.sqrt(frontier[:, 1])            # frontier files store variance
+    o = np.argsort(f_std)
     errs = []
     for r, v in points:
-        v_star = _interp_var_at_return(frontier, r)
-        r_star = _interp_return_at_var(frontier, v)
-        var_err = 100.0*(v-v_star)/abs(v_star) if v_star != 0 else np.nan
-        ret_err = 100.0*(r_star-r)/abs(r_star) if r_star != 0 else np.nan
-        cand = [e for e in (var_err, ret_err) if not np.isnan(e)]
-        if cand: errs.append(max(0.0, min(cand)))
+        x = float(np.sqrt(v))
+        x_star = float(np.interp(r, f_ret, f_std, left=np.nan, right=np.nan))
+        y_star = float(np.interp(x, f_std[o], f_ret[o], left=np.nan, right=np.nan))
+        cand = []
+        if not np.isnan(x_star) and x_star != 0:
+            cand.append(abs(100.0 * (x - x_star) / x_star))
+        if not np.isnan(y_star) and y_star != 0:
+            cand.append(abs(100.0 * (r - y_star) / y_star))
+        if cand:
+            errs.append(min(cand))
     errs = np.asarray(errs)
     if len(errs) == 0:
-        return {k: np.nan for k in ("mean", "median", "min", "max", "std", "n")}
+        return {k: np.nan for k in keys}
     return {"mean": float(errs.mean()), "median": float(np.median(errs)),
             "min": float(errs.min()), "max": float(errs.max()),
-            "std": float(errs.std(ddof=1)) if len(errs)>1 else 0.0, "n": int(len(errs))}
+            "std": float(errs.std(ddof=1)) if len(errs) > 1 else 0.0, "n": int(len(errs))}
 
 
 
@@ -105,8 +108,10 @@ def task_orlib(argv=None):
     Literaturni benchmark metahevristik na standardnih OR-Library instancah
     (Chang et al. 2000). Za vsak instance in vsak algoritem trasira KARDINALNO
     OMEJENO efficient frontier (sweep po λ) in izmeri standardno odstotno napako
-    glede na priloženo NEomejeno fronto — natanko metrika, ki jo poročajo
-    Chang et al. (2000), Crama & Schyns (2003), Cura (2009).
+    glede na priloženo NEomejeno fronto — metrika Chang et al. (2000), Sec. 5.2.2
+    (odstotno odstopanje v standardnem odklonu, minimum obeh smeri). Cura (2009)
+    uporablja iste podatke in nastavitve, a drugačne mere (Evklidska razdalja,
+    napaka variance in donosa); Crama & Schyns (2003) OR-Library ne uporablja.
 
     Standardne nastavitve (Chang et al. 2000):
         K = 10,  εᵢ = 0.01,  δᵢ = 1.0.
@@ -275,9 +280,9 @@ def task_orlib(argv=None):
         import matplotlib.pyplot as plt
         for ds, d in all_pts.items():
             fr = d["_frontier"]
-            fig, ax = plt.subplots(figsize=(7, 5))
+            fig, ax = plt.subplots(figsize=(6.7, 5.0))
             ax.plot(np.sqrt(fr[:, 1]), fr[:, 0], "-", color="0.25", lw=1.8,
-                    label="USEF (neomejena fronta, ref.)")
+                    label="OKN (neomejeno št. sredstev)")
             for algo, pts in d.items():
                 if algo == "_frontier" or len(pts) == 0:
                     continue
@@ -286,12 +291,12 @@ def task_orlib(argv=None):
                            color=st["color"], label=st["label"], alpha=0.8)
             ax.set_xlabel("Tveganje σ (std)")
             ax.set_ylabel("Pričakovani donos μ")
-            ax.set_title(f"{ds} — {DATASETS[ds]['name']} (K={K_STD})")
+            ax.set_title(f"{DATASETS[ds]['name']} (K={K_STD})")
             ax.legend(fontsize=8, loc="lower right")
             ax.grid(alpha=0.3)
             p = os.path.join(RESULTS_DIR, f"orlib_frontier_{ds}.png")
-            fig.tight_layout(); fig.savefig(p, dpi=150)
-            fig.savefig(p[:-4] + ".pdf"); plt.close(fig)
+            fig.tight_layout(); fig.savefig(p, dpi=150, bbox_inches="tight", pad_inches=0.02)
+            fig.savefig(p[:-4] + ".pdf", bbox_inches="tight", pad_inches=0.02); plt.close(fig)
             print(f"  Graf: {p}")
 
     main()

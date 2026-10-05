@@ -85,6 +85,7 @@ def task_equity_curves_all(argv=None):
     # cost per unit L1 turnover, subtracted from each period's return before chaining).
     BENCHMARKS = [
         ("leow_allweather_direct", 52,  "^GSPC", "S&P 500", "equity_all_leow_allweather", "All-Weather ETF (COVID-19, Leow) -- vsak model pri lastnem tveganju-ujemajočem $P$", True, None),
+        ("aprea_djia",             12,  "^DJI",  "DJIA",    "equity_all_aprea_djia",       "Mesečno vlaganje (DJIA 2016–2020) -- bruto", False, None),
         ("longterm_investor",      12,  "SPY",   "SPY",     "equity_all_longterm",         "Dolgoročni vlagatelj (2011–2024) -- bruto", False, None),
         ("longterm_investor",      12,  "SPY",   "SPY",     "equity_all_longterm_net",      "Dolgoročni vlagatelj (2011–2024) -- neto (10 b.t. stroškov)", False, 10.0),
     ]
@@ -205,9 +206,9 @@ def task_pipeline_schema(argv=None):
             "cov":   "Ocena kovariančne\nmatrike",
             "std":   "Standardizacija\n$\\hat{\\vec{\\mu}}_t \\to \\tilde{\\mu}_t$ ($z$-vrednosti)\n$\\hat{\\vec{\\Sigma}}_t \\to \\tilde{\\Sigma}_t$ (deljenje z $\\bar d_t$)",
             "opt":   "Optimizator KONP\n(RD / SO)",
-            "hold":  "Portfelj v\nnapovednem obdobju\n$[t{+}1,\\,t{+}H]$",
-            "eval":  "Zunajvzorčne mere\nuspešnosti",
-            "ret":   "realizirani donos",
+            "hold":  "Napovedno obdobje\n$[t{+}1,\\,t{+}H]$",
+            "eval":  "Vrednotenje",
+            "ret":   "",
             "loop":  r"pomik okna: $t \leftarrow t+H$",
         },
         "en": {
@@ -216,9 +217,9 @@ def task_pipeline_schema(argv=None):
             "cov":   "Covariance matrix\nestimate",
             "std":   "Standardization\n$\\hat{\\vec{\\mu}}_t \\to \\tilde{\\mu}_t$ ($z$-scores)\n$\\hat{\\vec{\\Sigma}}_t \\to \\tilde{\\Sigma}_t$ (divide by $\\bar d_t$)",
             "opt":   "CCMV optimizer\n(PSO / SA)",
-            "hold":  "Portfolio over the\nforecast period\n$[t{+}1,\\,t{+}H]$",
-            "eval":  "Out-of-sample\nperformance metrics",
-            "ret":   "realised return",
+            "hold":  "Forecast period\n$[t{+}1,\\,t{+}H]$",
+            "eval":  "Evaluation",
+            "ret":   "",
             "loop":  r"window advances: $t \leftarrow t+H$",
         },
     }[args.lang]
@@ -244,8 +245,8 @@ def task_pipeline_schema(argv=None):
         (23, 3, 47, 17, "III", TEXT["cov"], C_COV),
         (53, 16, 76, 38, "IV", TEXT["std"], C_STD),
         (83, 20, 101, 34, "V", TEXT["opt"], C_OPT),
-        (108, 20, 125, 34, "VI", TEXT["hold"], C_HOLD),
-        (108, 3, 125, 17, "VII", TEXT["eval"], C_EVAL),
+        (108, 20, 128, 34, "VI", TEXT["hold"], C_HOLD),
+        (108, 3, 128, 17, "VII", TEXT["eval"], C_EVAL),
     ]
     for x0, y0, x1, y1, roman, label, col in boxes:
         ax.add_patch(FancyBboxPatch(
@@ -277,11 +278,11 @@ def task_pipeline_schema(argv=None):
     arrow((53, 21), (47, 10), r"$\hat{\vec{\Sigma}}_t$", 50.0, 14.0, rad=-0.12)
     arrow((83, 27), (76, 27), r"$\tilde{\mu}_t,\ \tilde{\Sigma}_t$", 79.5, 31.0)
     arrow((108, 27), (101, 27), r"$\vec{w}_t$", 104.5, 30.5)
-    arrow((116.5, 17), (116.5, 20), TEXT["ret"], 118.0, 18.5, ha="left")
+    arrow((118.0, 17), (118.0, 20), TEXT["ret"], 119.5, 18.5, ha="left")
 
     # Walk-forward loop: the window advances and the cycle repeats.
     Y_LOOP = 58.0
-    ax.plot([116.5, 116.5, 9], [34, Y_LOOP, Y_LOOP], color="0.45", lw=0.9,
+    ax.plot([118.0, 118.0, 9], [34, Y_LOOP, Y_LOOP], color="0.45", lw=0.9,
             linestyle=(0, (4, 2)), zorder=1, solid_capstyle="butt")
     ax.add_patch(FancyArrowPatch(
         (9, Y_LOOP), (9, 36), arrowstyle="-|>", mutation_scale=9, lw=0.9,

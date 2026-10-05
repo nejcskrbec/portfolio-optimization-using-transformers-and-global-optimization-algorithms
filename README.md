@@ -4,33 +4,42 @@ A research framework for evaluating whether Transformer return forecasts improve
 cardinality-constrained portfolio selection over the classical historical
 estimate of expected returns.
 
-This project was developed as the practical part of a master's thesis at the
-Faculty of Computer and Information Science (FRI), University of Ljubljana. The
-thesis reports and discusses the results produced by these benchmarks.
-
 The pipeline is split into two independently swappable halves — return/risk
 estimation and portfolio construction — evaluated in a walk-forward loop:
 
 ![Pipeline schematic](docs/pipeline.png)
 
-At each decision point *t*, the μ branch (a forecasting model) and the Σ branch
-(covariance estimate) run in parallel off the same history and meet in the
-cardinality-constrained mean–variance solver. The resulting portfolio is held
-over the next *H* days, its realised return feeds the out-of-sample metrics, and
-the window advances.
+At each decision point *t* (stage I), the μ branch (a forecasting model, II) and
+the Σ branch (covariance estimate, III) run in parallel off the same history. Both
+are standardized (IV) and meet in the cardinality-constrained mean–variance
+optimizer (V; PSO or SA). The resulting portfolio is held over the next *H* days
+(VI), its realised return feeds the out-of-sample evaluation (VII), and the
+window advances.
 
 MASTER, TFT and PatchTST are the learned forecasters, each representing a
 different way of applying Transformers to financial time series. Replacing the μ
-branch with the historical mean, while holding everything else fixed, gives each
-model a matched non-learned baseline — so differences in the results are
-attributable to the forecast rather than to the solver.
+branch with the historical mean (same input window), while holding everything
+else fixed, gives each model a matched non-learned baseline — so differences in
+the results are attributable to the forecast rather than to the optimizer.
 
-The schematic is generated, not hand-drawn:
+### Experiments
 
-```bash
-python -u benchmark/run.py pipeline-schema --lang en   # -> docs/pipeline.png
-python -u benchmark/run.py pipeline-schema             # -> thesis-paper/fig/pipeline.pdf
-```
+The optimizers are first checked on OR-Library, then the whole procedure is
+evaluated on four experiments:
+
+| Experiment | Command | Source / setting |
+|---|---|---|
+| Optimizer check | `orlib` | OR-Library, Chang et al. (2000) |
+| Half-year investing | `wang` | S&P 500, Wang et al. (ICLR 2023), N=494, K=20 |
+| Crisis investing | `leow-allweather` | All-Weather basket, Jan–Apr 2020, K=5 |
+| Monthly investing | `aprea-djia` | DJIA, Aprea & Sbaiz, 2016–2020, K=10 |
+| Long-term investing | `practical` | 61 US stocks, 2011–2024, 10 bps costs, K=20 |
+
+In all four experiments at least one Transformer beats its matched historical
+mean, but not always the same one: TFT is strongest on half-year and crisis
+investing, PatchTST on monthly and long-term investing. The two optimizers differ
+little in portfolio quality; SA is more accurate on OR-Library and more than twice
+as fast. Model training dominates the total compute time.
 
 ---
 
@@ -73,7 +82,6 @@ benchmark/              Evaluation harness
   walkforward.py          Walk-forward engine (decision/realization windows)
   tasks/                  One task_*.py module per benchmark
   utils/                  Shared helpers, data loading, plotting
-    tables_utils.py         Writes thesis-paper/generated/*.tex
     reopt_utils.py          Re-optimize from stored μ/Σ without retraining
   configs/                One config per benchmark, named after it
                           (wang.json, practical.json, ...)
@@ -96,7 +104,6 @@ data/                   Benchmark datasets
   orlib/                  OR-Library port1-5 / portef1-5 (Chang et al. 2000)
   literature/wang/        S&P 500 prices for the Wang benchmark
 test_results/           Run outputs (gitignored)
-thesis-paper/           LaTeX sources
 ```
 
 ---
@@ -113,12 +120,12 @@ python -u benchmark/run.py <benchmark> [flags]
 
 | Command | What it does |
 |---|---|
-| `predictive` | IC / RankIC / long-short protocol — pure forecast quality, no optimizer |
+| `predictive` | IC / RankIC / long-short evaluation — pure forecast quality, no optimizer |
 | `orlib` | OR-Library cardinality-constrained frontier (Chang et al. 2000) |
 | `orlib --orlib-full` | port1–port5 with 50 λ points |
 | `leow` / `leow-allweather` | Leow (All-Weather basket) comparison |
 | `wang` | Wang et al. (ICLR 2023) S&P 500 predict-then-optimize |
-| `aprea-djia`, `aprea-nasdaq` | Aprea & Sbaiz (2025) method substitution, monthly OOS 2016–2020 |
+| `aprea-djia`, `aprea-nasdaq` | Aprea & Sbaiz method substitution, monthly OOS 2016–2020 |
 | `practical` | Long-term investor scenario with transaction costs |
 | `risk-matched --dir <run>` | Compare at a matched risk level (`--target-P`) |
 
@@ -141,17 +148,6 @@ python -u benchmark/run.py practical --smoke
 `--dry-run` resolves configs and wiring without executing anything, which makes
 it a fast sanity check after refactoring. `--smoke` performs real training on a
 reduced schedule.
-
-### Figures and tables
-
-```bash
-python -u benchmark/run.py equity-curves-all    # all-model equity curves
-python -u benchmark/run.py wang-risk-sweep
-python -u benchmark/run.py protocol-schema
-python -u benchmark/run.py pipeline-schema
-
-python benchmark/utils/tables_utils.py          # -> thesis-paper/generated/*.tex
-```
 
 ### Useful flags
 
@@ -260,11 +256,3 @@ guard is present (see above). `bash setup.sh --check` catches a missing
 library.
 
 For a full diagnostic of the installation, run `bash setup.sh --check`.
-
----
-
-## Thesis
-
-LaTeX sources are in `thesis-paper/` (`main.tex`, built with `latexmk -pdf`).
-Tables under `thesis-paper/generated/` are produced by
-`benchmark/utils/tables_utils.py` — edit the generator, not the generated files.
