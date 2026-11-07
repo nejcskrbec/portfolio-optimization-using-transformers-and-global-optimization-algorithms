@@ -35,8 +35,8 @@ _LIB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "master_lib")
 if _LIB not in sys.path:
     sys.path.insert(0, _LIB)
 
-WINDOWS = [5, 10, 20, 30, 60]
-T_LOOKBACK = 8
+WINDOWS = [20, 60, 120, 180, 264]   # paper: [5,10,20,30,60]; longer reach, same 158 features. 8 + 264 - 1 = 271 = TFT window
+T_LOOKBACK = 8    # paper value; the history reach comes from WINDOWS, not from more rows (CPU attention cost)
 MARKET_TICKERS = ["SPY", "IWM", "VTI"]     # US ekvivalenti CSI300/CSI500/CSI800
 _EPS = 1e-12
 
@@ -262,6 +262,31 @@ def _download_ohlcv_uncached(tickers, start, end):
 # ----------------------------------------------------------------------------
 # javni API
 # ----------------------------------------------------------------------------
+def _log_progress(model, every_s=60):
+    """Wrap model.train_epoch: log batches done every `every_s` seconds + epoch time.
+    (len(loader) counts samples, not daily batches, so no ETA is derivable.)"""
+    import time
+    orig = model.train_epoch
+
+    def train_epoch(loader):
+        t0, last, state = time.time(), time.time(), {"i": 0}
+
+        def gen():
+            nonlocal last
+            for batch in loader:
+                state["i"] += 1
+                if time.time() - last >= every_s:
+                    last = time.time()
+                    print(f"    [MASTER] batch {state['i']}, {last - t0:.0f}s v epohi", flush=True)
+                yield batch
+        loss = orig(gen())
+        print(f"    [MASTER] epoha: {time.time() - t0:.0f}s ({state['i']} batchev)", flush=True)
+        return loss
+
+    model.train_epoch = train_epoch
+    return model
+
+
 def train_master_us(config, df_train, avail_tickers, lookahead):
     """Nauči ORIGINALNI MASTER na ameriških podatkih. Vrne registry dict."""
     import tempfile
@@ -289,8 +314,13 @@ def train_master_us(config, df_train, avail_tickers, lookahead):
     # cube na CELOTNEM razponu; RobustZScoreNorm z median/MAD SAMO iz učnega
     # obdobja (brez leakage — test podatki ne vplivajo na normalizacijo).
     train_end = pd.Timestamp(mc.get("end_date", tc.get("start_date")))
+    # Training label horizon, decoupled from the portfolio horizon: MASTER's output
+    # is cross-sectionally z-scored, so any horizon yields the same kind of mu. A
+    # 120-day label leaves ~1 independent target per stock in a 3y window and the
+    # model learns regime noise; 21 days gives ~5x more independent labels.
+    label_h = int(mcfg.get("label_horizon", 21))
     print(f"  [MASTER] gradnja Alpha158 (158) + tržnih značilk (63) ...")
-    cube, dates, stats = _raw_then_norm(ohlcv, mkt_ohlcv, tickers, lookahead,
+    cube, dates, stats = _raw_then_norm(ohlcv, mkt_ohlcv, tickers, label_h,
                                         train_end)
 
     D, N = cube.shape[0], cube.shape[1]
@@ -314,8 +344,12 @@ def train_master_us(config, df_train, avail_tickers, lookahead):
             day_list.append((si, tk))
         return day_list if len(day_list) >= MIN_STOCKS else []
 
+    # first day whose whole input window has real (non-NaN) features: T + max(WINDOWS) - 2
+    # purge: label at di = close[di+h]/close[di+1] reaches h days ahead, so drop
+    # the last h train days or the model sees returns of the test period.
+    last_tr = int(dates.searchsorted(train_end, side="right")) - 1
     fit_days = [(di, dt) for di, dt in enumerate(dates)
-                if di >= T_LOOKBACK - 1 and dt <= train_end]
+                if di >= T_LOOKBACK + max(WINDOWS) - 2 and di + label_h <= last_tr]
 
     def _build(day_iter):
         samples, idx = [], []
@@ -333,19 +367,21 @@ def train_master_us(config, df_train, avail_tickers, lookahead):
     n_epoch = int(mcfg.get("epochs", 15))
     beta = float(mcfg.get("beta", 5))
     patience = int(mcfg.get("patience", 5))
+    es_metric = str(mcfg.get("early_stopping_metric", "train_loss"))
     horizon = int(lookahead)
+    thred = float(mcfg.get("train_stop_loss_thred", 0.95 if es_metric == "train_loss" else -1.0))
     validation_days = int(mcfg.get("validation_days", max(60, 2 * horizon)))
     save_dir = tempfile.mkdtemp(prefix="master_us_")
 
     def _new_model():
-        return MASTERModel(
+        return _log_progress(MASTERModel(
             d_feat=158, d_model=256, t_nhead=4, s_nhead=2,
             T_dropout_rate=0.5, S_dropout_rate=0.5, beta=beta,
             gate_input_start_index=158, gate_input_end_index=221,
             n_epochs=n_epoch, lr=float(mcfg.get("lr", 1e-5)), GPU=None, seed=seed,
-            train_stop_loss_thred=float(mcfg.get("train_stop_loss_thred", -1.0)),
+            train_stop_loss_thred=thred,
             save_path=save_dir, save_prefix="us",
-        )
+        ))
 
     # Two-stage training: (1) select the epoch count on a held-out validation
     # slice via the original MASTER's IC-based early stopping, (2) retrain a
@@ -356,13 +392,21 @@ def train_master_us(config, df_train, avail_tickers, lookahead):
     # fixed epoch count or relying on a training-loss plateau heuristic (which
     # a paper-faithful constant-LR/low-LR MASTER rarely triggers early).
     val_cut = max(0, len(fit_days) - validation_days)
-    train1_days, val1_days = fit_days[:val_cut], fit_days[val_cut:]
-    refit_on_full_window = len(train1_days) >= T_LOOKBACK and bool(val1_days)
+    # H-day gap so stage-1 train labels do not overlap the validation window
+    train1_days, val1_days = fit_days[:max(0, val_cut - label_h)], fit_days[val_cut:]
+    # Default = the MASTER paper's protocol: no validation selection, train on the
+    # full window and stop when the TRAIN loss <= train_stop_loss_thred (or at
+    # `epochs`). Validation loss/IC selection was dropped as the default: on a
+    # 120-day validation slice it is regime noise (val loss rises from epoch 0 even
+    # while out-of-sample IC improves, as MSE punishes growing prediction scale).
+    refit_on_full_window = (es_metric != "train_loss"
+                            and len(train1_days) >= T_LOOKBACK and bool(val1_days))
     if not refit_on_full_window:
         # Regime too short for a validation split: fall back to the paper's
         # fixed-epoch, no-selection behaviour on the full window.
-        print(f"  [MASTER] premalo dni za validation split; {n_epoch} epoh na "
-              f"polnem oknu brez izbire (konst. LR, beta={beta}, seed={seed})")
+        print(f"  [MASTER] brez validacijske izbire ({es_metric}); do {n_epoch} epoh na "
+              f"polnem oknu, stop pri train loss <= {thred} (label h={label_h}, "
+              f"konst. LR, beta={beta}, seed={seed})")
         model = _new_model()
         model.fit(dl_full)
         model.fitted = max(model.fitted, 0)
@@ -374,7 +418,8 @@ def train_master_us(config, df_train, avail_tickers, lookahead):
               f"(validacija {len(val1_days)} dni): {len(dl_valid1)} vzorcev, "
               f"patience={patience}, do {n_epoch} epoh ...")
         model1 = _new_model()
-        best_epoch = model1.fit(dl_train1, dl_valid1, patience=patience, max_epochs=n_epoch)
+        best_epoch = model1.fit(dl_train1, dl_valid1, patience=patience, max_epochs=n_epoch,
+                                metric=es_metric)
         del model1
         n_epoch2 = max(1, int(best_epoch) + 1)
         print(f"  [MASTER] 2. stopnja): {len(dl_full)} vzorcev na polnem oknu, "

@@ -164,7 +164,7 @@ class SequenceModel():
         self.model.load_state_dict(torch.load(param_path, map_location=self.device))
         self.fitted = 'Previously trained.'
 
-    def fit(self, dl_train, dl_valid=None, patience=None, max_epochs=None):
+    def fit(self, dl_train, dl_valid=None, patience=None, max_epochs=None, metric="val_loss"):
         """Train the model.
 
         Two independent modes, used as the two stages of a train/select/refit
@@ -184,6 +184,10 @@ class SequenceModel():
         train_loader = self._init_data_loader(dl_train, shuffle=True, drop_last=True)
         n_epochs = int(max_epochs) if max_epochs is not None else self.n_epochs
         select = patience is not None and dl_valid is not None
+        if metric not in ("val_loss", "ic"):
+            raise ValueError(f"metric must be 'val_loss' or 'ic', got '{metric}'")
+        valid_loader = (self._init_data_loader(dl_valid, shuffle=False, drop_last=False)
+                        if select and metric == "val_loss" else None)
 
         best_param = None
         best_score = -np.inf
@@ -199,7 +203,10 @@ class SequenceModel():
             else: print("Epoch %d, train_loss %.6f" % (step, train_loss))
 
             if select:
-                score = float(metrics['IC'])
+                # val_loss (default, matches TFT/PatchTST): minimise MSE on the
+                # cross-sectionally z-scored label; 'ic' = the upstream-style rule.
+                score = (-self.test_epoch(valid_loader) if metric == "val_loss"
+                         else float(metrics['IC']))
                 if np.isfinite(score) and score > best_score:
                     best_score, best_epoch, bad = score, step, 0
                     best_param = copy.deepcopy(self.model.state_dict())
@@ -207,8 +214,10 @@ class SequenceModel():
                     bad += 1
                     if bad >= int(patience):
                         print("  [MASTER] zgodnja ustavitev pri epohi %d "
-                              "(najboljsa epoha %d, valid IC %.4f)"
-                              % (step, best_epoch, best_score))
+                              "(najboljsa epoha %d, %s %.4f)"
+                              % (step, best_epoch,
+                                 "-val_loss" if metric == "val_loss" else "valid IC",
+                                 best_score))
                         break
                 continue
 
