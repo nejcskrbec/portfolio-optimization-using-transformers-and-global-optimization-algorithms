@@ -153,6 +153,8 @@
       "dropout": 0.3,
       "hidden_continuous_size": 8,
       "gradient_clip_val": 0.01,
+      "loss": "rmse",
+      "early_stopping_metric": "val_loss",
       "seed": 42,
       "accelerator": "mps",
       "devices": 1,

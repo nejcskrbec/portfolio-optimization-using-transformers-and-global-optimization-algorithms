@@ -4,6 +4,7 @@
 %   v^{t+1} = v^t + w1 (x^G - x) + w2 (x* - x),  x^{t+1} = x + v^{t+1},  w1, w2 ~ U[0,2];
 %   osebno najboljša rešitev x* se posodobi le ob izboljšanju,
 %   najboljša rešitev roja x^G je najboljša med osebno najboljšimi.
+\RequirePackage{fix-cm} % zvezno skaliranje pisave CM (sicer se manjše velikosti zaokrožijo na 5 pt)
 \documentclass[tikz,border=2pt]{standalone}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -20,9 +21,12 @@
 
 \tikzset{
   particle/.style={circle,fill=part,draw=white,line width=0.4pt,inner sep=0pt,minimum size=9pt,
-                   font=\fontsize{4.6}{5}\selectfont\bfseries,text=white},
-  ghost/.style={circle,draw=part!55,fill=part!12,line width=0.5pt,inner sep=0pt,minimum size=8pt},
-  newpos/.style={circle,draw=move,densely dashed,fill=white,fill opacity=0.85,line width=0.8pt,inner sep=0pt,minimum size=9pt},
+                   font=\fontsize{4}{4.5}\selectfont\bfseries,text=white},
+  ghost/.style={circle,draw=part!50,fill=white,line width=0.6pt,inner sep=0pt,minimum size=9pt,
+                font=\fontsize{4}{4.5}\selectfont\bfseries,text=part!55},
+  newpos/.style={circle,draw=move,densely dashed,fill=white,line width=0.8pt,inner sep=0pt,minimum size=9pt,
+                 font=\fontsize{4}{4.5}\selectfont\bfseries,text=move},
+  lab/.style={font=\fontsize{6}{7}\selectfont,inner sep=1pt},
   pb/.style={diamond,fill=pbest,inner sep=0pt,minimum size=12pt},
   gb/.style={diamond,fill=pbest,draw=gbest,line width=1.1pt,inner sep=0pt,minimum size=12pt},
   vec/.style={-{Stealth[length=4pt,width=3.4pt]},line width=1pt},
@@ -47,51 +51,55 @@
 \begin{document}
 \begin{tikzpicture}[x=0.86cm,y=0.86cm]
 
-% ---------------- Iteracija 1: naključni začetni položaji; osebni optimum = začetni položaj
+% ---------------- Iteracija 1: naključni začetni položaji; osebni optimum = začetni položaj (ne rišemo posebej)
 \begin{scope}
   \panel{Iteracija $1$}
-  \foreach \p/\x/\y in {I/0.6/0.9, II/0.8/4.1, III/3.3/0.6, IV/3.55/2.0, V/1.9/4.5}
-    { \node[pb] at (\x,\y) {}; \node[particle] at (\x,\y) {\p}; }
+  \foreach \p/\x/\y in {I/0.6/0.9, II/0.8/4.1, III/3.3/0.6, IV/3.6/1.65, V/1.9/4.5}
+    { \node[particle] at (\x,\y) {\p}; }
   \node[font=\scriptsize,anchor=north] at (2,-0.12) {$w_i$};
   \node[font=\scriptsize,anchor=east] at (-0.12,2.5) {$w_j$};
 \end{scope}
 
-% ---------------- Iteracija 2: vsi delci se izboljšajo, zato je romb na novem položaju
+% ---------------- Iteracija 2: vsi delci se izboljšajo, osebni optimum = nov položaj (ne rišemo posebej)
 \begin{scope}[shift={(4.6,0)}]
   \panel{Iteracija $2$}
   \foreach \p/\ax/\ay/\bx/\by in {I/0.6/0.9/1.35/1.65, II/0.8/4.1/1.3/3.25, III/3.3/0.6/3.05/1.5,
-                                  IV/3.55/2.0/3.15/2.3, V/1.9/4.5/2.05/3.8}
-    { \node[ghost] at (\ax,\ay) {};
+                                  IV/3.6/1.65/3.15/2.3, V/1.9/4.5/2.05/3.8}
+    { \node[ghost] at (\ax,\ay) {\p};
       \draw[vec,move,shorten <=4.2pt,shorten >=4.6pt] (\ax,\ay) -- (\bx,\by);
-      \node[pb] at (\bx,\by) {}; \node[particle] at (\bx,\by) {\p}; }
+      \node[particle] at (\bx,\by) {\p}; }
   \node[gb] at (3.15,2.3) {}; \node[particle] at (3.15,2.3) {IV};
 \end{scope}
 
-% ---------------- Iteracija t: delec II se je poslabšal, njegov osebni optimum je ostal zadaj
+% ---------------- Iteracija t: delec II se je poslabšal; osebni optimum x* je eden od prejšnjih položajev
+% Komponente so narisane zaporedno (vztrajnost -> omega1 -> omega2), da je pot konveksna in
+% rezultanta (premik) ne seka nobene komponente. Geometrija preverjena: g(x*) < g(x), g(x^G) najmanjši.
 \begin{scope}[shift={(9.2,0)}]
   \panel{Iteracija $t$}
-  % ostali delci: izboljšani, romb na položaju
-  \foreach \p/\x/\y in {I/2.45/1.3, III/3.35/1.7, V/2.1/3.9}
-    { \node[pb] at (\x,\y) {}; \node[particle] at (\x,\y) {\p}; }
+  \foreach \p/\x/\y in {I/3.0/0.85, III/3.4/1.75, V/2.1/3.9}
+    { \node[particle] at (\x,\y) {\p}; }
   % najboljša rešitev roja x^G = osebni optimum delca IV
   \coordinate (xg) at (3.05,2.45);
   \node[gb] at (xg) {}; \node[particle] at (xg) {IV};
-  % delec II: položaj x, osebni optimum x* (prejšnji, boljši položaj)
-  \coordinate (x)  at (0.95,1.75);
-  \coordinate (xs) at (1.35,2.6);
+  % delec II: položaj x in osebni optimum x*
+  \coordinate (x)  at (0.9,1.2);
+  \coordinate (xs) at (0.7,2.6);
   \node[pb] at (xs) {};
-  \draw[pcomp!70,densely dotted,line width=0.5pt] (x) -- (xs);
-  \draw[gbest!70,densely dotted,line width=0.5pt] (x) -- (xg);
-  % v^t = (-0.35,-0.55);  w2 (x*-x) = 1.0 (0.4,0.85);  w1 (x^G-x) = 0.7 (2.1,0.7)
-  \coordinate (a) at ($(x)+(-0.35,-0.55)$);
-  \coordinate (b) at ($(a)+(0.4,0.85)$);
-  \coordinate (c) at ($(b)+(1.47,0.49)$);
-  \draw[vec,inert] (x) -- (a);
-  \draw[vec,pcomp] (a) -- (b);
-  \draw[vec,gbest,shorten >=4.4pt] (b) -- (c);
+  \draw[pcomp!60,densely dotted,line width=0.6pt,shorten <=4.2pt,shorten >=5pt] (x) -- (xs);
+  % v^t = (0.65,-0.35);  w1 (x^G-x) = 0.4 (2.15,1.25);  w2 (x*-x) = 0.7 (-0.2,1.4)
+  \coordinate (a) at ($(x)+(0.65,-0.35)$);
+  \coordinate (b) at ($(a)+(0.86,0.5)$);
+  \coordinate (c) at ($(b)+(-0.14,0.98)$);
+  \draw[vec,inert,shorten <=4.2pt] (x) -- (a);
+  \draw[vec,gbest] (a) -- (b);
+  \draw[vec,pcomp,shorten >=4.4pt] (b) -- (c);
   \draw[vec,move,line width=1.3pt,shorten <=4.2pt,shorten >=4.4pt] (x) -- (c);
-  \node[newpos] at (c) {};
+  \node[newpos] at (c) {II};
   \node[particle] at (x) {II};
+  \node[lab,anchor=north east,part] at ($(x)+(-0.1,-0.1)$) {$\vec{x}^{\,t}_{m}$};
+  \node[lab,anchor=south east,move] at ($(c)+(-0.12,0.1)$) {$\vec{x}^{\,t+1}_{m}$};
+  \node[lab,anchor=south,pcomp] at ($(xs)+(0,0.2)$) {$\vec{x}^{\ast}_{m}$};
+  \node[lab,anchor=north,gbest] at ($(xg)+(0,-0.22)$) {$\vec{x}^{G}$};
 \end{scope}
 
 % ---------------- Konvergenca
@@ -102,29 +110,31 @@
   \node[font=\footnotesize,gbest,anchor=south west] at (2.75,3.05) {$\vec{w}^{\ast}$};
 \end{scope}
 
-% ---------------- Legenda
+% ---------------- Legenda (vrstice: vektorji, položaji, najboljše rešitve; stolpci poravnani)
 \begin{scope}[shift={(0,-0.9)},font=\scriptsize]
-  \node[particle,minimum size=7pt] (l1) at (0.2,0) {};
-  \node[anchor=west] at (0.45,0) {delec $\vec{x}_m$};
-  \node[pb,minimum size=9pt] at (3.2,0) {};
-  \node[anchor=west] at (3.45,0) {osebno najboljša rešitev $\vec{x}^{\ast}_m$};
-  \node[gb,minimum size=9pt] at (9.2,0) {};
-  \node[anchor=west] at (9.45,0) {najboljša rešitev roja $\vec{x}^{G}$};
-  \node[star,star points=5,star point ratio=2.3,fill=gbest,inner sep=0pt,minimum size=8pt] at (14.6,0) {};
-  \node[anchor=west] at (14.85,0) {optimum $\vec{w}^{\ast}$};
+  \draw[vec,move,line width=1.2pt] (0,0) -- (0.4,0);
+  \node[anchor=west] at (0.45,0) {premik $\vec{v}^{\,t+1}_m$};
+  \draw[vec,inert] (4.95,0) -- (5.35,0);
+  \node[anchor=west] at (5.4,0) {predhodna hitrost $\vec{v}^{\,t}_m$};
+  \draw[vec,gbest] (9.2,0) -- (9.6,0);
+  \node[anchor=west] at (9.65,0) {$\omega_1(\vec{x}^{G}-\vec{x}_m)$};
+  \draw[vec,pcomp] (13.0,0) -- (13.4,0);
+  \node[anchor=west] at (13.45,0) {$\omega_2(\vec{x}^{\ast}_m-\vec{x}_m)$};
 
-  \draw[vec,move,line width=1.2pt] (0,-0.55) -- (0.45,-0.55);
-  \node[anchor=west] at (0.5,-0.55) {premik $\vec{v}^{\,t+1}_m$};
-  \draw[vec,inert] (3,-0.55) -- (3.45,-0.55);
-  \node[anchor=west] at (3.5,-0.55) {predhodna hitrost $\vec{v}^{\,t}_m$};
-  \draw[vec,pcomp] (8.0,-0.55) -- (8.45,-0.55);
-  \node[anchor=west] at (8.5,-0.55) {$\omega_2(\vec{x}^{\ast}_m-\vec{x}_m)$};
-  \draw[vec,gbest] (11.6,-0.55) -- (12.05,-0.55);
-  \node[anchor=west] at (12.1,-0.55) {$\omega_1(\vec{x}^{G}-\vec{x}_m)$};
-  \node[ghost,minimum size=7pt] at (14.6,-0.55) {};
-  \node[anchor=west] at (14.85,-0.55) {prejšnji položaj};
-  \node[newpos,minimum size=7pt] at (14.6,-1.1) {};
-  \node[anchor=west] at (14.85,-1.1) {nov položaj};
+  \node[particle,minimum size=7pt] at (0.2,-0.55) {};
+  \node[anchor=west] at (0.45,-0.55) {trenutni položaj delca $\vec{x}^{\,t}_m$};
+  \node[ghost,minimum size=7pt] at (5.15,-0.55) {};
+  \node[anchor=west] at (5.4,-0.55) {prejšnji položaj delca};
+  \node[newpos,minimum size=7pt] at (9.4,-0.55) {};
+  \node[anchor=west] at (9.65,-0.55) {nov položaj $\vec{x}^{\,t+1}_m$};
+  \node[star,star points=5,star point ratio=2.3,fill=gbest,inner sep=0pt,minimum size=8pt] at (13.2,-0.55) {};
+  \node[anchor=west] at (13.45,-0.55) {optimum $\vec{w}^{\ast}$};
+
+  \node[pb,minimum size=9pt] at (0.2,-1.1) {};
+  \node[anchor=west] at (0.45,-1.1) {osebno najboljša rešitev $\vec{x}^{\ast}_m$};
+  \node[gb,minimum size=9pt] at (5.15,-1.1) {};
+  \node[anchor=west] at (5.4,-1.1) {najboljša rešitev roja $\vec{x}^{G}$};
+
 \end{scope}
 \end{tikzpicture}
 \end{document}

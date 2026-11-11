@@ -1,4 +1,4 @@
 paper,retrain,model,n_assets,n_trainings,train_sec_mean,train_sec_total
 Practical long-term investor scenario (own design),annual,PatchTST,61,14,111.3,1558.27
-Practical long-term investor scenario (own design),annual,TFT,61,14,2465.42,34515.89
 Practical long-term investor scenario (own design),annual,MASTER,61,14,91.18,1276.45
+Practical long-term investor scenario (own design),annual,TFT,61,14,2087.88,29230.38

@@ -5,7 +5,8 @@
     "FAIRNESS/UNITS: horizon scaling (automatic) scales historical mu AND Sigma by H=21 so they match the transformers' raw 21-day mu. Before this fix TFT/PatchTST mu had 69x/92x the cross-sectional dispersion of the historical mu while facing a 1-DAY Sigma, so the risk term was numerically irrelevant and they were effectively running max-return top-K selection inside the w_max box rather than mean-variance. Scaling both moments is a no-op for the Historical/MASTER solutions (H factors out of the objective).",
     "FAIRNESS/CADENCE: moment_refit=match_models re-estimates historical mu/Sigma on exactly the cutoff the models were last refit on (model_refit=annual), instead of 'expanding' which refreshed the baseline every MONTH while the models refit once a YEAR. On the Leow All-Weather protocol that same asymmetry was worth 4.4 Sharpe points to the baseline.",
     "FAIRNESS/RISK-MATCHING: P grid widened from a single point to 11 so `python benchmark/run.py risk-matched --dir <output_dir>` can report each model at matched REALIZED volatility. Adds ~1.1h of solver time, no extra training.",
-    "SEEDS: deliberately single-seed (42). With 168 monthly decisions the sampling noise that made the 13-decision Leow protocol a seed lottery is far better averaged; a 5-seed ensemble would multiply a 14-year/61-asset/3-model run by 5 for little gain."
+    "SEEDS: deliberately single-seed (42). With 168 monthly decisions the sampling noise that made the 13-decision Leow protocol a seed lottery is far better averaged; a 5-seed ensemble would multiply a 14-year/61-asset/3-model run by 5 for little gain.",
+    "TFT rows replaced on 2026-11-11 by a TFT-only rerun with loss='rmse' (conditional mean, as in the other experiments); the original Sept-2026 run had used the default QuantileLoss/median by accident. Sigma window pinned to 336 days so the setup matches; Historical@271 rows kept from the original run (rerun reproduced them to <=0.004 Sharpe). Rerun output: test_results/literature/longterm_investor__tft_rmse."
   ],
   "reference_values": {
     "note": "No external anchor; headline metrics are long-term terminal wealth, CAGR, annualized Sharpe and maximum drawdown, plus the equity curve vs SPY."
@@ -617,6 +618,8 @@
         "dropout": 0.3,
         "hidden_continuous_size": 8,
         "gradient_clip_val": 0.01,
+        "loss": "rmse",
+        "early_stopping_metric": "val_loss",
         "seed": 42,
         "accelerator": "mps",
         "devices": 1,
